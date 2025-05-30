@@ -11,16 +11,31 @@ namespace SportsBettingTracker.ViewModels
         public int TotalPushes { get; set; }
         public int PendingBets { get; set; }
         public decimal NetProfit { get; set; }
+        public decimal TotalStake { get; set; }
         public decimal WinPercentage { get; set; }
+        public decimal ROI { get; set; }
+        public int CurrentStreak { get; set; }
+        public string StreakType { get; set; } = "";
+        public int LongestWinStreak { get; set; }
+        public int LongestLossStreak { get; set; }
         public List<ProfitBySport> ProfitBySport { get; set; } = new List<ProfitBySport>();
         
         public List<string> ChartLabels { get; set; } = new List<string>();
         public List<decimal> ChartData { get; set; } = new List<decimal>();
-        
-        public string FormattedNetProfit => 
+        public List<decimal> CumulativeChartData { get; set; } = new List<decimal>();
+          public string FormattedNetProfit => 
             NetProfit >= 0 ? $"+${NetProfit:F2}" : $"-${Math.Abs(NetProfit):F2}";
             
         public string FormattedWinPercentage => $"{WinPercentage:F1}%";
+        
+        public string FormattedROI => $"{ROI:F1}%";
+        
+        public string FormattedStreak => 
+            CurrentStreak > 0 ? $"{CurrentStreak} {StreakType}" : "No current streak";
+            
+        public string FormattedLongestWinStreak => $"{LongestWinStreak} wins";
+        
+        public string FormattedLongestLossStreak => $"{LongestLossStreak} losses";
         
         public Dictionary<string, string> AvailableDateRanges => new()
         {
