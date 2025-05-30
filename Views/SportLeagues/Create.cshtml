@@ -1,0 +1,36 @@
+@model SportsBettingTracker.Models.SportLeague
+
+@{
+    ViewData["Title"] = "Add New Sport/League";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h1>Add New Sport/League</h1>
+            
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Sport/League Name</label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

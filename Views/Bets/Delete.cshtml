@@ -1,0 +1,56 @@
+@model SportsBettingTracker.Models.Bet
+
+@{
+    ViewData["Title"] = "Delete Bet";
+}
+
+<div class="container">
+    <h1>Delete Bet</h1>
+    <div class="alert alert-danger">
+        <h4>Are you sure you want to delete this bet?</h4>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">@Html.DisplayNameFor(model => model.BetDate)</dt>
+                <dd class="col-sm-9">@Html.DisplayFor(model => model.BetDate)</dd>
+
+                <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SportLeague)</dt>
+                <dd class="col-sm-9">@Html.DisplayFor(model => model.SportLeague.Name)</dd>
+
+                <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Match)</dt>
+                <dd class="col-sm-9">@Html.DisplayFor(model => model.Match)</dd>
+
+                <dt class="col-sm-3">@Html.DisplayNameFor(model => model.BetSelection)</dt>
+                <dd class="col-sm-9">@Html.DisplayFor(model => model.BetSelection)</dd>
+
+                <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Stake)</dt>
+                <dd class="col-sm-9">$@Html.DisplayFor(model => model.Stake)</dd>
+
+                <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Odds)</dt>
+                <dd class="col-sm-9">@Model.FormattedOdds</dd>
+
+                <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Result)</dt>
+                <dd class="col-sm-9">
+                    <span class="badge @(Model.Result == SportsBettingTracker.Models.BetResult.WIN ? "bg-success" : 
+                                         Model.Result == SportsBettingTracker.Models.BetResult.LOSS ? "bg-danger" : 
+                                         Model.Result == SportsBettingTracker.Models.BetResult.PUSH ? "bg-secondary" : "bg-warning")">
+                        @Html.DisplayFor(model => model.Result)
+                    </span>
+                </dd>
+
+                <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AmountWonLost)</dt>
+                <dd class="col-sm-9 @(Model.AmountWonLost.HasValue && Model.AmountWonLost.Value >= 0 ? "text-success" : "text-danger")">
+                    @Model.FormattedAmountWonLost
+                </dd>
+            </dl>
+
+            <form asp-action="Delete">
+                <input type="hidden" asp-for="Id" />
+                <button type="submit" class="btn btn-danger">Delete</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>

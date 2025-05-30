@@ -1,0 +1,95 @@
+@model SportsBettingTracker.Models.Bet
+
+@{
+    ViewData["Title"] = "Edit Bet";
+}
+
+<div class="container">
+    <h1>Edit Bet</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <form asp-action="Edit">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="BetDate" class="control-label"></label>
+                            <input asp-for="BetDate" type="date" class="form-control" />
+                            <span asp-validation-for="BetDate" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="SportLeagueId" class="control-label">Sport/League</label>
+                            <select asp-for="SportLeagueId" class="form-select" asp-items="ViewBag.SportLeagueId"></select>
+                            <span asp-validation-for="SportLeagueId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label asp-for="Match" class="control-label"></label>
+                            <input asp-for="Match" class="form-control" />
+                            <span asp-validation-for="Match" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label asp-for="BetSelection" class="control-label"></label>
+                            <input asp-for="BetSelection" class="form-control" />
+                            <span asp-validation-for="BetSelection" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Stake" class="control-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="Stake" class="form-control" type="number" min="0" step="0.01" />
+                            </div>
+                            <span asp-validation-for="Stake" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Odds" class="control-label"></label>
+                            <input asp-for="Odds" class="form-control" type="number" />
+                            <small class="form-text text-muted">Enter American odds (e.g. -110, +150)</small>
+                            <span asp-validation-for="Odds" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Result" class="control-label"></label>
+                            <select asp-for="Result" class="form-select" asp-items="Html.GetEnumSelectList<SportsBettingTracker.Models.BetResult>()"></select>
+                            <span asp-validation-for="Result" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

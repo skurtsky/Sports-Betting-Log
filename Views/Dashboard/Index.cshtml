@@ -1,0 +1,167 @@
+@model SportsBettingTracker.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="container">
+    <div class="mb-4">
+        <h1>Sports Betting Dashboard</h1>
+        <form id="dateRangeForm" asp-action="Index" method="get" class="d-flex align-items-center">
+            <div class="me-3">
+                <label for="dateRange" class="form-label">Date Range:</label>
+                <select id="dateRange" name="dateRange" class="form-select" onchange="this.form.submit()">
+                    @foreach (var range in Model.AvailableDateRanges)
+                    {
+                        <option value="@range.Key" selected="@(range.Key == Model.DateRange)">@range.Value</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <p class="mb-0">Showing data from <strong>@Model.StartDate.ToString("MM/dd/yyyy")</strong> to <strong>@Model.EndDate.ToString("MM/dd/yyyy")</strong></p>
+            </div>
+        </form>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Total Bets</h5>
+                    <p class="card-text fs-2">@Model.TotalBets</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Win Rate</h5>
+                    <p class="card-text fs-2">@Model.FormattedWinPercentage</p>
+                    <p class="card-text">(@Model.TotalWins W - @Model.TotalLosses L - @Model.TotalPushes P)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card @(Model.NetProfit >= 0 ? "bg-success" : "bg-danger") text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Net Profit</h5>
+                    <p class="card-text fs-2">@Model.FormattedNetProfit</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Bets</h5>
+                    <p class="card-text fs-2">@Model.PendingBets</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Net Profit Over Time</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="profitChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Profit by Sport/League</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Sport/League</th>
+                                    <th>Total Bets</th>
+                                    <th>Win-Loss</th>
+                                    <th>Win Rate</th>
+                                    <th>Net Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var sport in Model.ProfitBySport)
+                                {
+                                    <tr>
+                                        <td>@sport.SportLeagueName</td>
+                                        <td>@sport.TotalBets</td>
+                                        <td>@sport.WinningBets-@(sport.TotalBets - sport.WinningBets)</td>
+                                        <td>@sport.FormattedWinPercentage</td>
+                                        <td class="@(sport.NetProfit >= 0 ? "text-success" : "text-danger")">@sport.FormattedNetProfit</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the chart data from the model
+            const chartLabels = @Html.Raw(Json.Serialize(Model.ChartLabels));
+            const chartData = @Html.Raw(Json.Serialize(Model.ChartData));
+            
+            // Calculate cumulative profit
+            const cumulativeData = [];
+            let sum = 0;
+            for (let i = 0; i < chartData.length; i++) {
+                sum += chartData[i];
+                cumulativeData.push(sum);
+            }
+            
+            // Create the chart
+            const ctx = document.getElementById('profitChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Cumulative Profit ($)',
+                        data: cumulativeData,
+                        borderColor: cumulativeData[cumulativeData.length - 1] >= 0 ? '#28a745' : '#dc3545',
+                        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

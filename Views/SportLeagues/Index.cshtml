@@ -1,0 +1,60 @@
+@model IEnumerable<SportsBettingTracker.Models.SportLeague>
+
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Settings</h1>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Sports / Leagues</h5>
+                    <a asp-action="Create" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus"></i> Add New
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p>Manage the sports and leagues you bet on.</p>
+                    
+                    <ul class="list-group">
+                        @foreach (var item in Model) {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                @item.Name
+                                <div class="btn-group" role="group">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Additional Settings</h5>
+                </div>
+                <div class="card-body">
+                    <p>This section will be expanded in the future with more options:</p>
+                    <ul>
+                        <li>Customize odds display (American, Decimal, Fractional)</li>
+                        <li>Set default stake amounts</li>
+                        <li>Export data options</li>
+                        <li>Betting performance analytics options</li>
+                        <li>Custom categories and tags</li>
+                        <li>User preferences</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

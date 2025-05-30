@@ -1,0 +1,141 @@
+@model SportsBettingTracker.ViewModels.PaginatedList<SportsBettingTracker.Models.Bet>
+
+@{
+    ViewData["Title"] = "Bets";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Bets</h1>
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus"></i> Add Bet</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Search by match, bet selection or sport...">
+                    <button type="submit" class="btn btn-outline-secondary">Search</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+            
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]" asp-route-currentFilter="@ViewData["CurrentFilter"]">Date</a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["SportSortParm"]" asp-route-currentFilter="@ViewData["CurrentFilter"]">Sport/League</a>
+                            </th>
+                            <th>Match</th>
+                            <th>Bet Selection</th>
+                            <th>Stake</th>
+                            <th>Odds</th>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["ResultSortParm"]" asp-route-currentFilter="@ViewData["CurrentFilter"]">Result</a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["AmountSortParm"]" asp-route-currentFilter="@ViewData["CurrentFilter"]">Amount Won/Lost</a>
+                            </th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model) {
+                        <tr>
+                            <td>@item.BetDate.ToString("MM/dd/yyyy")</td>
+                            <td>@item.SportLeague.Name</td>
+                            <td>@item.Match</td>
+                            <td>@item.BetSelection</td>
+                            <td>@($"${item.Stake:F2}")</td>
+                            <td>@item.FormattedOdds</td>
+                            <td>
+                                <span class="badge @(item.Result == SportsBettingTracker.Models.BetResult.WIN ? "bg-success" : 
+                                                   item.Result == SportsBettingTracker.Models.BetResult.LOSS ? "bg-danger" : 
+                                                   item.Result == SportsBettingTracker.Models.BetResult.PUSH ? "bg-secondary" : "bg-warning")">
+                                    @item.Result
+                                </span>
+                            </td>
+                            <td class="@(item.AmountWonLost.HasValue && item.AmountWonLost >= 0 ? "text-success" : "text-danger")">
+                                @item.FormattedAmountWonLost
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Actions
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@item.Id">Edit</a></li>
+                                        <li><a class="dropdown-item" asp-action="Details" asp-route-id="@item.Id">Details</a></li>
+                                        <li><a class="dropdown-item" asp-action="Delete" asp-route-id="@item.Id">Delete</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            
+            <nav aria-label="Page navigation">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        Showing <strong>@Model.Count</strong> of <strong>@Model.TotalItems</strong> bets
+                    </div>
+                    <ul class="pagination">
+                        @if (Model.HasPreviousPage)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["CurrentSort"]" 
+                                   asp-route-pageNumber="@(Model.PageIndex - 1)" 
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]">
+                                    Previous
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
+                            </li>
+                        }
+
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                <a class="page-link" asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["CurrentSort"]" 
+                                   asp-route-pageNumber="@i" 
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]">
+                                    @i
+                                </a>
+                            </li>
+                        }
+
+                        @if (Model.HasNextPage)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["CurrentSort"]" 
+                                   asp-route-pageNumber="@(Model.PageIndex + 1)" 
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]">
+                                    Next
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link">Next</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </nav>
+        </div>
+    </div>
+</div>
