@@ -1,0 +1,69 @@
+@{
+    ViewData["Title"] = "Map CSV Columns";
+    var headers = (string[])ViewBag.Headers;
+    var rows = (List<string>)ViewBag.Rows;
+    var betFields = (string[])ViewBag.BetFields;
+    var requiredFields = (string[])ViewBag.RequiredFields;
+    var suggestedMappings = (string[])ViewBag.SuggestedMappings;
+    var missingFields = ViewBag.MissingFields != null ? ((string)ViewBag.MissingFields).Split(',') : new string[0];
+}
+<div class="container">
+    <h1>Map CSV Columns</h1>
+    @if (missingFields.Length > 0)
+    {
+        <div class="alert alert-danger">
+            <strong>Missing required fields:</strong>
+            <span class="text-danger">@string.Join(", ", missingFields)</span>
+        </div>
+    }
+    <div class="alert alert-info">
+        <strong>Note:</strong> Fields in <strong>bold</strong> are required.
+    </div>
+    <form asp-action="ImportCsvMapped" method="post">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    @foreach (var header in headers)
+                    {
+                        <th>
+                            <select name="columnMap" class="form-select">
+                                <option value="">(Ignore)</option>
+                                @foreach (var field in betFields)
+                                {
+                                    var style = requiredFields.Contains(field) ? "font-weight: bold" : "";
+                                    var selected = suggestedMappings[Array.IndexOf(headers, header)] == field;
+                                    @if (selected)
+                                    {
+                                        <option value="@field" style="@style" selected>@field</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@field" style="@style">@field</option>
+                                    }
+                                }
+                            </select>
+                            <div class="small text-muted">@header</div>
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in rows)
+                {
+                    var cells = row.Split(',');
+                    <tr>
+                        @foreach (var cell in cells)
+                        {
+                            <td>@cell</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <input type="hidden" name="csvRaw" value="@ViewBag.CsvRaw" />
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Import</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

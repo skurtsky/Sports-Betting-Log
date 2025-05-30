@@ -1,0 +1,16 @@
+@{
+    ViewData["Title"] = "Import Bets from CSV";
+    string? error = ViewData.ModelState["csvFile"]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+<div class="container">
+    <h1>Import Bets from CSV</h1>
+    <form asp-action="ImportCsv" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="csvFile" class="form-label">Select CSV File</label>
+            <input type="file" name="csvFile" class="form-control" accept=".csv" required />
+            <span class="text-danger">@error</span>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
