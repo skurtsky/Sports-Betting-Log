@@ -9,9 +9,7 @@ namespace SportsBettingTracker.Models
         LOSS,
         PUSH,
         PENDING
-    }
-
-    public class Bet
+    }    public class Bet
     {
         public int Id { get; set; }
         
@@ -26,6 +24,10 @@ namespace SportsBettingTracker.Models
         [ForeignKey("SportLeagueId")]
         [Display(Name = "Sport/League")]
         public SportLeague? SportLeague { get; set; }
+        
+        [Required]
+        [Display(Name = "Bet Type")]
+        public BetType BetType { get; set; } = BetType.Moneyline;
         
         [Required]
         [StringLength(200)]

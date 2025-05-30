@@ -15,10 +15,10 @@ namespace SportsBettingTracker.ViewModels
         public decimal WinPercentage { get; set; }
         public decimal ROI { get; set; }
         public int CurrentStreak { get; set; }
-        public string StreakType { get; set; } = "";
-        public int LongestWinStreak { get; set; }
+        public string StreakType { get; set; } = "";        public int LongestWinStreak { get; set; }
         public int LongestLossStreak { get; set; }
         public List<ProfitBySport> ProfitBySport { get; set; } = new List<ProfitBySport>();
+        public List<ProfitByBetType> ProfitByBetType { get; set; } = new List<ProfitByBetType>();
         
         public List<string> ChartLabels { get; set; } = new List<string>();
         public List<decimal> ChartData { get; set; } = new List<decimal>();

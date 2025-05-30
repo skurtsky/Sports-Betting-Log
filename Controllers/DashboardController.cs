@@ -30,15 +30,28 @@ namespace SportsBettingTracker.Controllers
             var bets = await _context.Bets
                 .Include(b => b.SportLeague)
                 .Where(b => b.BetDate >= startDate && b.BetDate <= endDate)
-                .ToListAsync();
-
-            // Calculate net profit by sport/league
+                .ToListAsync();            // Calculate net profit by sport/league
             var profitBySport = bets
                 .Where(b => b.AmountWonLost.HasValue) // Only include bets with results
                 .GroupBy(b => b.SportLeague.Name)
                 .Select(g => new ProfitBySport
                 {
                     SportLeagueName = g.Key,
+                    TotalBets = g.Count(),
+                    WinningBets = g.Count(b => b.Result == BetResult.WIN),
+                    NetProfit = g.Sum(b => b.AmountWonLost ?? 0),
+                    WinPercentage = g.Count() > 0 ? (decimal)g.Count(b => b.Result == BetResult.WIN) / g.Count() * 100 : 0
+                })
+                .OrderByDescending(p => p.NetProfit)
+                .ToList();
+                
+            // Calculate net profit by bet type
+            var profitByBetType = bets
+                .Where(b => b.AmountWonLost.HasValue) // Only include bets with results
+                .GroupBy(b => b.BetType)
+                .Select(g => new ProfitByBetType
+                {
+                    BetType = g.Key,
                     TotalBets = g.Count(),
                     WinningBets = g.Count(b => b.Result == BetResult.WIN),
                     NetProfit = g.Sum(b => b.AmountWonLost ?? 0),
@@ -93,10 +106,10 @@ namespace SportsBettingTracker.Controllers
                     ? (decimal)bets.Count(b => b.Result == BetResult.WIN) / bets.Count(b => b.Result != BetResult.PENDING) * 100 
                     : 0,
                 CurrentStreak = currentStreak,
-                StreakType = streakType,
-                LongestWinStreak = longestWinStreak,
+                StreakType = streakType,                LongestWinStreak = longestWinStreak,
                 LongestLossStreak = longestLossStreak,
                 ProfitBySport = profitBySport,
+                ProfitByBetType = profitByBetType,
                 ChartLabels = chartData.Select(d => d.Date).ToList(),
                 ChartData = chartData.Select(d => d.Profit).ToList(),
                 CumulativeChartData = cumulativeProfit

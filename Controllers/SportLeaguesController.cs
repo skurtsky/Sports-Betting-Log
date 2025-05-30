@@ -19,7 +19,10 @@ namespace SportsBettingTracker.Controllers
         // GET: SportLeagues
         public async Task<IActionResult> Index()
         {
-            return View(await _context.SportLeagues.ToListAsync());
+            var leagues = await _context.SportLeagues.ToListAsync();
+            var betTypes = await _context.BetTypeConfigurations.OrderBy(b => b.DisplayOrder).ToListAsync();
+            ViewBag.BetTypes = betTypes;
+            return View(leagues);
         }
 
         // GET: SportLeagues/Details/5
@@ -147,6 +150,140 @@ namespace SportsBettingTracker.Controllers
                 await _context.SaveChangesAsync();
             }
             
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: SportLeagues/MoveUp/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MoveUp(int id)
+        {
+            var currentItem = await _context.SportLeagues.FindAsync(id);
+            if (currentItem == null)
+            {
+                return NotFound();
+            }
+
+            var itemAbove = await _context.SportLeagues
+                .Where(l => l.DisplayOrder < currentItem.DisplayOrder)
+                .OrderByDescending(l => l.DisplayOrder)
+                .FirstOrDefaultAsync();
+
+            if (itemAbove != null)
+            {
+                int tempOrder = currentItem.DisplayOrder;
+                currentItem.DisplayOrder = itemAbove.DisplayOrder;
+                itemAbove.DisplayOrder = tempOrder;
+
+                _context.Update(currentItem);
+                _context.Update(itemAbove);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: SportLeagues/MoveDown/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MoveDown(int id)
+        {
+            var currentItem = await _context.SportLeagues.FindAsync(id);
+            if (currentItem == null)
+            {
+                return NotFound();
+            }
+
+            var itemBelow = await _context.SportLeagues
+                .Where(l => l.DisplayOrder > currentItem.DisplayOrder)
+                .OrderBy(l => l.DisplayOrder)
+                .FirstOrDefaultAsync();
+
+            if (itemBelow != null)
+            {
+                int tempOrder = currentItem.DisplayOrder;
+                currentItem.DisplayOrder = itemBelow.DisplayOrder;
+                itemBelow.DisplayOrder = tempOrder;
+
+                _context.Update(currentItem);
+                _context.Update(itemBelow);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: SportLeagues/DeleteBetType/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteBetType(int id)
+        {
+            var betType = await _context.BetTypeConfigurations.FindAsync(id);
+            if (betType != null)
+            {
+                _context.BetTypeConfigurations.Remove(betType);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: SportLeagues/MoveBetTypeUp/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MoveBetTypeUp(int id)
+        {
+            var currentItem = await _context.BetTypeConfigurations.FindAsync(id);
+            if (currentItem == null)
+            {
+                return NotFound();
+            }
+
+            var itemAbove = await _context.BetTypeConfigurations
+                .Where(b => b.DisplayOrder < currentItem.DisplayOrder)
+                .OrderByDescending(b => b.DisplayOrder)
+                .FirstOrDefaultAsync();
+
+            if (itemAbove != null)
+            {
+                int tempOrder = currentItem.DisplayOrder;
+                currentItem.DisplayOrder = itemAbove.DisplayOrder;
+                itemAbove.DisplayOrder = tempOrder;
+
+                _context.Update(currentItem);
+                _context.Update(itemAbove);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: SportLeagues/MoveBetTypeDown/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MoveBetTypeDown(int id)
+        {
+            var currentItem = await _context.BetTypeConfigurations.FindAsync(id);
+            if (currentItem == null)
+            {
+                return NotFound();
+            }
+
+            var itemBelow = await _context.BetTypeConfigurations
+                .Where(b => b.DisplayOrder > currentItem.DisplayOrder)
+                .OrderBy(b => b.DisplayOrder)
+                .FirstOrDefaultAsync();
+
+            if (itemBelow != null)
+            {
+                int tempOrder = currentItem.DisplayOrder;
+                currentItem.DisplayOrder = itemBelow.DisplayOrder;
+                itemBelow.DisplayOrder = tempOrder;
+
+                _context.Update(currentItem);
+                _context.Update(itemBelow);
+                await _context.SaveChangesAsync();
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

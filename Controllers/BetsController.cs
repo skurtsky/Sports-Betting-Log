@@ -89,12 +89,10 @@ namespace SportsBettingTracker.Controllers
         {
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name");
             return View();
-        }
-
-        // POST: Bets/Create
+        }        // POST: Bets/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,BetDate,SportLeagueId,Match,BetSelection,Stake,Odds,Result")] Bet bet)
+        public async Task<IActionResult> Create([Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result")] Bet bet)
         {
             if (ModelState.IsValid)
             {
@@ -122,12 +120,10 @@ namespace SportsBettingTracker.Controllers
             }
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
-        }
-
-        // POST: Bets/Edit/5
+        }        // POST: Bets/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,BetDate,SportLeagueId,Match,BetSelection,Stake,Odds,Result")] Bet bet)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result")] Bet bet)
         {
             if (id != bet.Id)
             {

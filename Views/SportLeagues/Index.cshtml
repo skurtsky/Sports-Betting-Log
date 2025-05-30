@@ -24,12 +24,49 @@
                     <p>Manage the sports and leagues you bet on.</p>
                     
                     <ul class="list-group">
-                        @foreach (var item in Model) {
+                        @foreach (var item in Model.OrderBy(l => l.DisplayOrder)) {
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                @item.Name
+                                <span>@item.Name</span>
                                 <div class="btn-group" role="group">
+                                    <form asp-action="MoveUp" asp-route-id="@item.Id" method="post" style="display:inline">
+                                        <button class="btn btn-sm btn-outline-secondary" title="Move Up">&#8593;</button>
+                                    </form>
+                                    <form asp-action="MoveDown" asp-route-id="@item.Id" method="post" style="display:inline">
+                                        <button class="btn btn-sm btn-outline-secondary" title="Move Down">&#8595;</button>
+                                    </form>
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Bet Types</h5>
+                    <form asp-controller="BetTypes" asp-action="Create" method="get" style="display:inline">
+                        <button class="btn btn-sm btn-primary" type="submit">Add New</button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <p>Manage the bet types available for your bets.</p>
+                    <ul class="list-group">
+                        @foreach (var item in ViewBag.BetTypes as IEnumerable<SportsBettingTracker.Models.BetTypeConfiguration>) {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@item.DisplayName</span>
+                                <div class="btn-group" role="group">
+                                    <form asp-action="MoveBetTypeUp" asp-route-id="@item.Id" method="post" style="display:inline">
+                                        <button class="btn btn-sm btn-outline-secondary" title="Move Up">&#8593;</button>
+                                    </form>
+                                    <form asp-action="MoveBetTypeDown" asp-route-id="@item.Id" method="post" style="display:inline">
+                                        <button class="btn btn-sm btn-outline-secondary" title="Move Down">&#8595;</button>
+                                    </form>
+                                    <a asp-controller="BetTypes" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form asp-controller="BetTypes" asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this bet type?');">
+                                        <button class="btn btn-sm btn-outline-danger" title="Delete">Delete</button>
+                                    </form>
                                 </div>
                             </li>
                         }

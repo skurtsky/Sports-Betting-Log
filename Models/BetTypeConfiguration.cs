@@ -1,24 +1,28 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace SportsBettingTracker.Models
-{    public class SportLeague
+{
+    public class BetTypeConfiguration
     {
         public int Id { get; set; }
         
         [Required]
-        [StringLength(100)]
-        public string Name { get; set; } = string.Empty;
+        public BetType BetType { get; set; }
         
-        [StringLength(200)]
-        public string? Description { get; set; }
+        [Required]
+        [Display(Name = "Display Name")]
+        [StringLength(50)]
+        public string DisplayName { get; set; } = string.Empty;
         
+        [Required]
         [Display(Name = "Display Order")]
         public int DisplayOrder { get; set; }
         
         [Display(Name = "Is Active")]
         public bool IsActive { get; set; } = true;
         
-        // Navigation property to related bets
-        public ICollection<Bet>? Bets { get; set; }
+        [Display(Name = "Description")]
+        [StringLength(200)]
+        public string? Description { get; set; }
     }
 }

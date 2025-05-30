@@ -26,10 +26,10 @@
                         <tr>
                             <th>
                                 <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]" asp-route-currentFilter="@ViewData["CurrentFilter"]">Date</a>
-                            </th>
-                            <th>
+                            </th>                            <th>
                                 <a asp-action="Index" asp-route-sortOrder="@ViewData["SportSortParm"]" asp-route-currentFilter="@ViewData["CurrentFilter"]">Sport/League</a>
                             </th>
+                            <th>Bet Type</th>
                             <th>Match</th>
                             <th>Bet Selection</th>
                             <th>Stake</th>
@@ -44,10 +44,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                    @foreach (var item in Model) {
-                        <tr>
+                    @foreach (var item in Model) {                        <tr>
                             <td>@item.BetDate.ToString("MM/dd/yyyy")</td>
                             <td>@item.SportLeague.Name</td>
+                            <td>@item.BetType</td>
                             <td>@item.Match</td>
                             <td>@item.BetSelection</td>
                             <td>@($"${item.Stake:F2}")</td>

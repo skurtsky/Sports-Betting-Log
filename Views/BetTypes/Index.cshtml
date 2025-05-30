@@ -1,0 +1,41 @@
+@model IEnumerable<SportsBettingTracker.Models.BetTypeConfiguration>
+@{
+    ViewData["Title"] = "Manage Bet Types";
+}
+<div class="container">
+    <h1>Manage Bet Types</h1>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order</th>
+                <th>Type</th>
+                <th>Display Name</th>
+                <th>Description</th>
+                <th>Active</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    <form asp-action="MoveUp" asp-route-id="@item.Id" method="post" style="display:inline">
+                        <button class="btn btn-sm btn-outline-secondary" title="Move Up">&#8593;</button>
+                    </form>
+                    <form asp-action="MoveDown" asp-route-id="@item.Id" method="post" style="display:inline">
+                        <button class="btn btn-sm btn-outline-secondary" title="Move Down">&#8595;</button>
+                    </form>
+                </td>
+                <td>@item.BetType</td>
+                <td>@item.DisplayName</td>
+                <td>@item.Description</td>
+                <td>@item.IsActive</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Edit</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
