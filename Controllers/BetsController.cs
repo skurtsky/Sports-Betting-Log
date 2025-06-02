@@ -9,6 +9,7 @@ using SportsBettingTracker.Data;
 using SportsBettingTracker.Models;
 using SportsBettingTracker.ViewModels;
 using Microsoft.VisualBasic.FileIO; // Add this for TextFieldParser
+using System.IO; // For file handling
 
 namespace SportsBettingTracker.Controllers
 {
@@ -226,63 +227,107 @@ namespace SportsBettingTracker.Controllers
             {
                 ModelState.AddModelError("csvFile", "Please select a CSV file.");
                 return View();
-            }            // Read the CSV file using TextFieldParser to handle quoted fields
-            using var stream = new System.IO.MemoryStream();
-            await csvFile.CopyToAsync(stream);
-            stream.Position = 0;
-            using var reader = new StreamReader(stream);
-            using var csvParser = new TextFieldParser(reader);
-            csvParser.TextFieldType = FieldType.Delimited;
-            csvParser.SetDelimiters(",");
-            csvParser.HasFieldsEnclosedInQuotes = true;
-
-            var lines = new List<string[]>();
-            while (!csvParser.EndOfData)
-            {
-                var fields = csvParser.ReadFields();
-                if (fields != null && fields.Any(f => !string.IsNullOrWhiteSpace(f)))
-                {
-                    lines.Add(fields);
-                }
             }
 
-            if (lines.Count < 2)
+            // Create a unique temp file path for the uploaded CSV
+            var tempFilePath = Path.Combine(Path.GetTempPath(), $"sbt_import_{Guid.NewGuid()}.csv");
+            
+            try
             {
-                ModelState.AddModelError("csvFile", "CSV file must have at least a header and one data row.");
+                // Save the CSV file to disk
+                using (var fileStream = new FileStream(tempFilePath, FileMode.Create))
+                {
+                    await csvFile.CopyToAsync(fileStream);
+                }
+                
+                // Read just the headers and first 10 rows for preview
+                using var reader = new StreamReader(tempFilePath);
+                using var csvParser = new TextFieldParser(reader);
+                csvParser.TextFieldType = FieldType.Delimited;
+                csvParser.SetDelimiters(",");
+                csvParser.HasFieldsEnclosedInQuotes = true;
+                
+                // Read the headers
+                var headers = csvParser.ReadFields();
+                if (headers == null || headers.Length == 0)
+                {
+                    ModelState.AddModelError("csvFile", "CSV file has no headers.");
+                    System.IO.File.Delete(tempFilePath);
+                    return View();
+                }
+                
+                // Read up to 10 lines for preview
+                var previewRows = new List<string[]>();
+                int rowCount = 0;
+                while (!csvParser.EndOfData && rowCount < 10)
+                {
+                    var fields = csvParser.ReadFields();
+                    if (fields != null && fields.Any(f => !string.IsNullOrWhiteSpace(f)))
+                    {
+                        previewRows.Add(fields);
+                        rowCount++;
+                    }
+                }
+                
+                // Check if we have at least one data row
+                if (previewRows.Count < 1)
+                {
+                    ModelState.AddModelError("csvFile", "CSV file must have at least a header and one data row.");
+                    System.IO.File.Delete(tempFilePath);
+                    return View();
+                }
+                
+                // Store the file path in TempData for the mapping step
+                TempData["CsvFilePath"] = tempFilePath;
+                
+                // Store the headers and preview rows for mapping UI
+                TempData["CsvHeaders"] = System.Text.Json.JsonSerializer.Serialize(headers);
+                
+                // Convert the preview rows to CSV strings for display
+                var previewRowsFormatted = previewRows
+                    .Select(row => string.Join(",", row.Select(field => field.Contains(",") ? $"\"{field}\"" : field)))
+                    .ToList();
+                TempData["CsvRows"] = System.Text.Json.JsonSerializer.Serialize(previewRowsFormatted);
+                
+                return RedirectToAction("MapCsvColumns");
+            }
+            catch (Exception ex)
+            {
+                // Clean up the temp file if an error occurred
+                if (System.IO.File.Exists(tempFilePath))
+                {
+                    try { System.IO.File.Delete(tempFilePath); } catch { /* Ignore deletion errors */ }
+                }
+                
+                ModelState.AddModelError("", $"Error processing CSV file: {ex.Message}");
                 return View();
             }
-
-            // Get headers from first row
-            var headers = lines[0];
-
-            // Store the data in TempData for mapping step
-            TempData["CsvHeaders"] = System.Text.Json.JsonSerializer.Serialize(headers);
-            // Convert the arrays to CSV strings for preview
-            var previewRows = lines.Skip(1).Take(10)
-                .Select(row => string.Join(",", row.Select(field => field.Contains(",") ? $"\"{field}\"" : field)))
-                .ToList();
-            TempData["CsvRows"] = System.Text.Json.JsonSerializer.Serialize(previewRows);
-            
-            // Store the raw CSV with proper quoting
-            var csvContent = new System.Text.StringBuilder();
-            foreach (var row in lines)
-            {
-                csvContent.AppendLine(string.Join(",", row.Select(field => field.Contains(",") ? $"\"{field}\"" : field)));
-            }
-            TempData["CsvRaw"] = csvContent.ToString();
-            return RedirectToAction("MapCsvColumns");
         }
 
         // GET: Bets/MapCsvColumns
         public IActionResult MapCsvColumns()
-        {            if (TempData["CsvHeaders"] == null || TempData["CsvRows"] == null)
+        {
+            // Make sure we have the CSV file path and headers
+            if (TempData["CsvFilePath"] == null || TempData["CsvHeaders"] == null || TempData["CsvRows"] == null)
                 return RedirectToAction("ImportCsv");
             
+            var csvFilePath = TempData["CsvFilePath"] as string;
             var headersJson = TempData["CsvHeaders"] as string;
             var rowsJson = TempData["CsvRows"] as string;
-            if (headersJson == null || rowsJson == null)
+            
+            if (csvFilePath == null || headersJson == null || rowsJson == null)
                 return RedirectToAction("ImportCsv");
-
+                
+            // Verify the temp file still exists
+            if (!System.IO.File.Exists(csvFilePath))
+            {
+                TempData["Error"] = "The uploaded CSV file is no longer available. Please upload again.";
+                return RedirectToAction("ImportCsv");
+            }
+            
+            // Keep the file path in TempData for the next request
+            TempData.Keep("CsvFilePath");
+            
             var headers = System.Text.Json.JsonSerializer.Deserialize<string[]>(headersJson) ?? Array.Empty<string>();
             var rows = System.Text.Json.JsonSerializer.Deserialize<List<string>>(rowsJson) ?? new List<string>();
             
@@ -327,7 +372,7 @@ namespace SportsBettingTracker.Controllers
             ViewBag.SuggestedMappings = suggestedMappings;
             ViewBag.BetFields = new[] { "BetDate", "SportLeague", "BetType", "Match", "BetSelection", "Stake", "Odds", "Result", "AmountWonLost" };
             ViewBag.RequiredFields = new[] { "BetDate", "Match", "BetSelection", "Stake", "Odds" };
-            ViewBag.CsvRaw = TempData["CsvRaw"];
+            ViewBag.CsvFilePath = csvFilePath;
             ViewBag.MissingFields = TempData["MissingFields"];
             return View();
         }
@@ -335,233 +380,274 @@ namespace SportsBettingTracker.Controllers
         // POST: Bets/ImportCsvMapped
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ImportCsvMapped(string csvRaw, string[] columnMap)
+        public async Task<IActionResult> ImportCsvMapped(string csvFilePath, string[] columnMap)
         {
-            if (string.IsNullOrWhiteSpace(csvRaw) || columnMap == null || columnMap.Length == 0)
+            if (string.IsNullOrWhiteSpace(csvFilePath) || !System.IO.File.Exists(csvFilePath) || columnMap == null || columnMap.Length == 0)
             {
-                TempData["Error"] = "Invalid mapping or CSV data.";
+                TempData["Error"] = "Invalid mapping or CSV file not found.";
                 return RedirectToAction("ImportCsv");
             }
 
-            // Debug information
-            var mappingInfo = new List<string>();
-            for (int i = 0; i < columnMap.Length; i++)
+            try
             {
-                if (!string.IsNullOrWhiteSpace(columnMap[i]))
-                    mappingInfo.Add($"Column {i}: {columnMap[i]}");
-            }
-            TempData["Debug"] = $"Column mappings: {string.Join(", ", mappingInfo)}";
-            
-            var csvLines = csvRaw.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
-            if (csvLines.Count < 2)
-            {
-                TempData["Error"] = "CSV file must have at least a header and one data row.";
-                return RedirectToAction("ImportCsv");
-            }
-            
-            var csvHeaders = csvLines[0].Trim().Split(',');
-            
-            // Check for required fields
-            var requiredFields = new[] { "BetDate", "Match", "BetSelection", "Stake", "Odds" };
-            var missingFields = requiredFields.Where(rf => !columnMap.Contains(rf)).ToList();
-            if (missingFields.Any())
-            {
-                var previewRows = csvLines.Skip(1).Take(10).ToList();
-                TempData["MissingFields"] = string.Join(",", missingFields);
-                TempData["CsvHeaders"] = System.Text.Json.JsonSerializer.Serialize(csvHeaders);
-                TempData["CsvRows"] = System.Text.Json.JsonSerializer.Serialize(previewRows);
-                TempData["CsvRaw"] = csvRaw;
-                return RedirectToAction("MapCsvColumns");
-            }
-            
-            // Process the import
-            var imported = 0;
-            var skipped = 0;
-            var errors = new List<string>();
-
-            for (int i = 1; i < csvLines.Count; i++)
-            {
-                try
-                {                    // Use TextFieldParser to properly handle quoted fields
-                    using var reader = new StringReader(csvLines[i]);
-                    using var parser = new TextFieldParser(reader);
+                // Debug information
+                var mappingInfo = new List<string>();
+                for (int i = 0; i < columnMap.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(columnMap[i]))
+                        mappingInfo.Add($"Column {i}: {columnMap[i]}");
+                }
+                TempData["Debug"] = $"Column mappings: {string.Join(", ", mappingInfo)}";
+                
+                // Read just the header row to validate the mapping
+                string[] csvHeaders;
+                using (var reader = new StreamReader(csvFilePath))
+                using (var parser = new TextFieldParser(reader))
+                {
                     parser.TextFieldType = FieldType.Delimited;
                     parser.SetDelimiters(",");
                     parser.HasFieldsEnclosedInQuotes = true;
-
-                    var cells = parser.ReadFields();
-                    if (cells == null || cells.Length != csvHeaders.Length) 
-                    {
-                        skipped++;
-                        errors.Add($"Row {i}: Column count mismatch or empty row");
-                        continue;
-                    }
-
-                    var bet = new Models.Bet();
-                    string? leagueName = null;
-                    string? betTypeStr = null;
-                    bool stakeSet = false, oddsSet = false;
-                    bool hasRequiredFields = true;
-                    var missingFieldsList = new List<string>();
-
-                    for (int c = 0; c < columnMap.Length; c++)
-                    {
-                        if (c >= cells.Length) continue;
-                        
-                        var field = columnMap[c];
-                        if (string.IsNullOrWhiteSpace(field)) continue;
-                        
-                        var value = cells[c]?.Trim() ?? string.Empty;
-                        
-                        switch (field)
-                        {
-                            case "BetDate":
-                                if (DateTime.TryParse(value, out var dt)) 
-                                    bet.BetDate = dt;
-                                else
-                                    missingFieldsList.Add("BetDate");
-                                break;
-                            case "SportLeague":
-                                leagueName = value;
-                                break;
-                            case "BetType":
-                                betTypeStr = value;
-                                break;
-                            case "Match":
-                                if (!string.IsNullOrWhiteSpace(value))
-                                    bet.Match = value;
-                                else
-                                    missingFieldsList.Add("Match");
-                                break;
-                            case "BetSelection":
-                                if (!string.IsNullOrWhiteSpace(value))
-                                    bet.BetSelection = value;
-                                else
-                                    missingFieldsList.Add("BetSelection");
-                                break;
-                            case "Stake":
-                                // Remove currency symbol, commas, and whitespace
-                                var stakeStr = value.Replace("$", "").Replace(",", "").Trim();
-                                if (decimal.TryParse(stakeStr, out var stake)) 
-                                { 
-                                    bet.Stake = stake; 
-                                    stakeSet = true; 
-                                }
-                                else
-                                {
-                                    missingFieldsList.Add("Stake");
-                                }
-                                break;
-                            case "Odds":
-                                var oddsStr = value.Replace("+", "").Trim();
-                                if (int.TryParse(oddsStr, out var odds)) 
-                                { 
-                                    bet.Odds = odds; 
-                                    oddsSet = true; 
-                                }
-                                else
-                                    missingFieldsList.Add("Odds");
-                                break;
-                            case "Result":
-                                // Clean up the value and convert to uppercase for consistent handling
-                                value = value.Trim().ToUpper();
-                                
-                                // Handle special cases first
-                                if (value == "P" || value == "PUSH" || value == "PUSHED" || value == "T" || value == "TIE")
-                                {
-                                    bet.Result = Models.BetResult.PUSH;
-                                }
-                                else if (value == "W" || value == "WIN" || value == "WON" || value == "1")
-                                {
-                                    bet.Result = Models.BetResult.WIN;
-                                }
-                                else if (value == "L" || value == "LOSS" || value == "LOST" || value == "0")
-                                {
-                                    bet.Result = Models.BetResult.LOSS;
-                                }
-                                // If none of the special cases match, try standard enum parsing
-                                else if (!Enum.TryParse<Models.BetResult>(value, out var res))
-                                {
-                                    bet.Result = Models.BetResult.PENDING;
-                                }
-                                else
-                                {
-                                    bet.Result = res;
-                                }
-                                break;
-                            case "AmountWonLost":
-                                var amountStr = value.Replace("$", "").Replace(",", "").Replace("+", "").Trim();
-                                if (string.IsNullOrWhiteSpace(amountStr)) break;
-                                if (decimal.TryParse(amountStr, out var awl))
-                                {
-                                    // If amount starts with "-", it's already negative
-                                    bet.AmountWonLost = value.StartsWith("-") ? awl : Math.Abs(awl);
-                                }
-                                break;
-                        }
-                    }
                     
-                    // Handle SportLeague
-                    if (string.IsNullOrWhiteSpace(leagueName)) leagueName = "Other";
-                    var league = _context.SportLeagues.FirstOrDefault(l => l.Name == leagueName);
-                    if (league == null)
-                    {
-                        league = new Models.SportLeague { 
-                            Name = leagueName, 
-                            IsActive = true, 
-                            DisplayOrder = _context.SportLeagues.Any() ? _context.SportLeagues.Max(s => s.DisplayOrder) + 1 : 1 
-                        };
-                        _context.SportLeagues.Add(league);
-                        await _context.SaveChangesAsync();
-                    }
-                    bet.SportLeagueId = league.Id;
+                    csvHeaders = parser.ReadFields() ?? Array.Empty<string>();
                     
-                    // Handle BetType
-                    Models.BetType betTypeEnum;
-                    if (string.IsNullOrWhiteSpace(betTypeStr) || !Enum.TryParse<Models.BetType>(betTypeStr, out betTypeEnum))
-                        betTypeEnum = Models.BetType.Other;
-                    bet.BetType = betTypeEnum;
-                    
-                    // Calculate AmountWonLost if not provided
-                    if (!bet.AmountWonLost.HasValue && stakeSet && oddsSet)
+                    if (csvHeaders.Length == 0)
                     {
-                        bet.CalculateWinLoss();
-                    }
-
-                    // Check required fields
-                    hasRequiredFields = bet.BetDate != default && 
-                                       !string.IsNullOrWhiteSpace(bet.Match) && 
-                                       !string.IsNullOrWhiteSpace(bet.BetSelection) && 
-                                       stakeSet && oddsSet;
-
-                    if (hasRequiredFields)
-                    {
-                        _context.Bets.Add(bet);
-                        imported++;
-                    }
-                    else
-                    {
-                        skipped++;
-                        if (missingFieldsList.Any())
-                        {
-                            errors.Add($"Row {i}: Missing or invalid fields: {string.Join(", ", missingFieldsList)}");
-                        }
-                        else
-                        {
-                            errors.Add($"Row {i}: Missing required fields");
-                        }
+                        TempData["Error"] = "CSV file has no headers.";
+                        return RedirectToAction("ImportCsv");
                     }
                 }
-                catch (Exception ex)
+                
+                // Check for required fields
+                var requiredFields = new[] { "BetDate", "Match", "BetSelection", "Stake", "Odds" };
+                var missingFields = requiredFields.Where(rf => !columnMap.Contains(rf)).ToList();
+                if (missingFields.Any())
                 {
-                    skipped++;
-                    errors.Add($"Row {i}: {ex.Message}");
+                    // Re-read the headers and preview rows for re-display
+                    var previewRows = new List<string>();
+                    using (var reader = new StreamReader(csvFilePath))
+                    {
+                        // Skip header row
+                        var headerLine = reader.ReadLine();
+                        
+                        // Get up to 10 preview rows
+                        for (int i = 0; i < 10 && !reader.EndOfStream; i++)
+                        {
+                            var line = reader.ReadLine();
+                            if (string.IsNullOrWhiteSpace(line)) continue;
+                            previewRows.Add(line);
+                        }
+                    }
+                    
+                    TempData["MissingFields"] = string.Join(",", missingFields);
+                    TempData["CsvHeaders"] = System.Text.Json.JsonSerializer.Serialize(csvHeaders);
+                    TempData["CsvRows"] = System.Text.Json.JsonSerializer.Serialize(previewRows);
+                    TempData["CsvFilePath"] = csvFilePath;
+                    return RedirectToAction("MapCsvColumns");
                 }
-            }
-            
-            try
-            {
-                await _context.SaveChangesAsync();
+                
+                // Process the import
+                var imported = 0;
+                var skipped = 0;
+                var errors = new List<string>();
+
+                // Process the CSV file row by row to avoid loading it all into memory
+                using (var reader = new StreamReader(csvFilePath))
+                using (var parser = new TextFieldParser(reader))
+                {
+                    parser.TextFieldType = FieldType.Delimited;
+                    parser.SetDelimiters(",");
+                    parser.HasFieldsEnclosedInQuotes = true;
+                    
+                    // Skip the header row
+                    parser.ReadFields();
+                    
+                    int rowIndex = 1; // Start at line 1 (after header)
+                    while (!parser.EndOfData)
+                    {
+                        try
+                        {
+                            var cells = parser.ReadFields();
+                            if (cells == null || cells.Length != csvHeaders.Length) 
+                            {
+                                skipped++;
+                                errors.Add($"Row {rowIndex}: Column count mismatch or empty row");
+                                rowIndex++;
+                                continue;
+                            }
+
+                            var bet = new Models.Bet();
+                            string? leagueName = null;
+                            string? betTypeStr = null;
+                            bool stakeSet = false, oddsSet = false;
+                            bool hasRequiredFields = true;
+                            var missingFieldsList = new List<string>();
+
+                            for (int c = 0; c < Math.Min(columnMap.Length, cells.Length); c++)
+                            {
+                                var field = columnMap[c];
+                                if (string.IsNullOrWhiteSpace(field)) continue;
+                                
+                                var value = cells[c]?.Trim() ?? string.Empty;
+                                
+                                switch (field)
+                                {
+                                    case "BetDate":
+                                        if (DateTime.TryParse(value, out var dt)) 
+                                            bet.BetDate = dt;
+                                        else
+                                            missingFieldsList.Add("BetDate");
+                                        break;
+                                    case "SportLeague":
+                                        leagueName = value;
+                                        break;
+                                    case "BetType":
+                                        betTypeStr = value;
+                                        break;
+                                    case "Match":
+                                        if (!string.IsNullOrWhiteSpace(value))
+                                            bet.Match = value;
+                                        else
+                                            missingFieldsList.Add("Match");
+                                        break;
+                                    case "BetSelection":
+                                        if (!string.IsNullOrWhiteSpace(value))
+                                            bet.BetSelection = value;
+                                        else
+                                            missingFieldsList.Add("BetSelection");
+                                        break;
+                                    case "Stake":
+                                        // Remove currency symbol, commas, and whitespace
+                                        var stakeStr = value.Replace("$", "").Replace(",", "").Trim();
+                                        if (decimal.TryParse(stakeStr, out var stake)) 
+                                        { 
+                                            bet.Stake = stake; 
+                                            stakeSet = true; 
+                                        }
+                                        else
+                                            missingFieldsList.Add("Stake");
+                                        break;
+                                    case "Odds":
+                                        var oddsStr = value.Replace("+", "").Trim();
+                                        if (int.TryParse(oddsStr, out var odds)) 
+                                        { 
+                                            bet.Odds = odds; 
+                                            oddsSet = true; 
+                                        }
+                                        else
+                                            missingFieldsList.Add("Odds");
+                                        break;
+                                    case "Result":
+                                        // Clean up the value and convert to uppercase for consistent handling
+                                        value = value.Trim().ToUpper();
+                                        
+                                        // Handle special cases first
+                                        if (value == "P" || value == "PUSH" || value == "PUSHED" || value == "T" || value == "TIE")
+                                        {
+                                            bet.Result = Models.BetResult.PUSH;
+                                        }
+                                        else if (value == "W" || value == "WIN" || value == "WON" || value == "1")
+                                        {
+                                            bet.Result = Models.BetResult.WIN;
+                                        }
+                                        else if (value == "L" || value == "LOSS" || value == "LOST" || value == "0")
+                                        {
+                                            bet.Result = Models.BetResult.LOSS;
+                                        }
+                                        // If none of the special cases match, try standard enum parsing
+                                        else if (!Enum.TryParse<Models.BetResult>(value, out var res))
+                                        {
+                                            bet.Result = Models.BetResult.PENDING;
+                                        }
+                                        else
+                                        {
+                                            bet.Result = res;
+                                        }
+                                        break;
+                                    case "AmountWonLost":
+                                        var amountStr = value.Replace("$", "").Replace(",", "").Replace("+", "").Trim();
+                                        if (string.IsNullOrWhiteSpace(amountStr)) break;
+                                        if (decimal.TryParse(amountStr, out var awl))
+                                        {
+                                            // If amount starts with "-", it's already negative
+                                            bet.AmountWonLost = value.StartsWith("-") ? awl : Math.Abs(awl);
+                                        }
+                                        break;
+                                }
+                            }
+                            
+                            // Handle SportLeague
+                            if (string.IsNullOrWhiteSpace(leagueName)) leagueName = "Other";
+                            var league = await _context.SportLeagues.FirstOrDefaultAsync(l => l.Name == leagueName);
+                            if (league == null)
+                            {
+                                league = new Models.SportLeague { 
+                                    Name = leagueName, 
+                                    IsActive = true, 
+                                    DisplayOrder = _context.SportLeagues.Any() ? _context.SportLeagues.Max(s => s.DisplayOrder) + 1 : 1 
+                                };
+                                _context.SportLeagues.Add(league);
+                                await _context.SaveChangesAsync();
+                            }
+                            bet.SportLeagueId = league.Id;
+                            
+                            // Handle BetType
+                            Models.BetType betTypeEnum;
+                            if (string.IsNullOrWhiteSpace(betTypeStr) || !Enum.TryParse<Models.BetType>(betTypeStr, out betTypeEnum))
+                                betTypeEnum = Models.BetType.Other;
+                            bet.BetType = betTypeEnum;
+                            
+                            // Calculate AmountWonLost if not provided
+                            if (!bet.AmountWonLost.HasValue && stakeSet && oddsSet)
+                            {
+                                bet.CalculateWinLoss();
+                            }
+
+                            // Check required fields
+                            hasRequiredFields = bet.BetDate != default && 
+                                               !string.IsNullOrWhiteSpace(bet.Match) && 
+                                               !string.IsNullOrWhiteSpace(bet.BetSelection) && 
+                                               stakeSet && oddsSet;
+
+                            if (hasRequiredFields)
+                            {
+                                _context.Bets.Add(bet);
+                                imported++;
+                                
+                                // Save in batches of 50 to avoid memory issues with very large files
+                                if (imported % 50 == 0)
+                                {
+                                    await _context.SaveChangesAsync();
+                                }
+                            }
+                            else
+                            {
+                                skipped++;
+                                if (missingFieldsList.Any())
+                                {
+                                    errors.Add($"Row {rowIndex}: Missing or invalid fields: {string.Join(", ", missingFieldsList)}");
+                                }
+                                else
+                                {
+                                    errors.Add($"Row {rowIndex}: Missing required fields");
+                                }
+                            }
+                            
+                            rowIndex++;
+                        }
+                        catch (Exception ex)
+                        {
+                            skipped++;
+                            errors.Add($"Row {rowIndex}: {ex.Message}");
+                            rowIndex++;
+                        }
+                    }
+                }
+                
+                // Save any remaining changes
+                if (imported > 0 && imported % 50 != 0)
+                {
+                    await _context.SaveChangesAsync();
+                }
                 
                 if (imported > 0)
                     TempData["Success"] = $"Successfully imported {imported} bets.";
@@ -574,9 +660,20 @@ namespace SportsBettingTracker.Controllers
                 if (errors.Count > 0)
                     TempData["ImportErrors"] = string.Join("<br>", errors.Take(5));
             }
-            catch (Exception ex)
+            finally
             {
-                TempData["Error"] = $"Error saving to database: {ex.Message}";
+                // Clean up the temporary file
+                try
+                {
+                    if (System.IO.File.Exists(csvFilePath))
+                    {
+                        System.IO.File.Delete(csvFilePath);
+                    }
+                }
+                catch
+                {
+                    // Ignore errors during cleanup
+                }
             }
             
             return RedirectToAction("Index");
