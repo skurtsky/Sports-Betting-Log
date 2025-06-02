@@ -20,9 +20,7 @@ namespace SportsBettingTracker.Controllers
         public BetsController(ApplicationDbContext context)
         {
             _context = context;
-        }
-
-        // GET: Bets
+        }        // GET: Bets
         public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
         {
             ViewData["CurrentSort"] = sortOrder;
@@ -41,6 +39,9 @@ namespace SportsBettingTracker.Controllers
             }
 
             ViewData["CurrentFilter"] = searchString;
+            
+            // Add sport leagues list for quick edit dropdowns
+            ViewBag.SportLeagues = await _context.SportLeagues.OrderBy(s => s.Name).ToListAsync();
 
             var bets = from b in _context.Bets.Include(b => b.SportLeague)
                        select b;
@@ -677,6 +678,92 @@ namespace SportsBettingTracker.Controllers
             }
             
             return RedirectToAction("Index");
+        }
+
+        // POST: Bets/QuickEdit - API endpoint for in-line editing
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> QuickEdit(int id, string field, string value)
+        {
+            var bet = await _context.Bets.FindAsync(id);
+            if (bet == null)
+            {
+                return Json(new { success = false, message = "Bet not found" });
+            }
+
+            try
+            {
+                switch (field)
+                {
+                    case "BetDate":
+                        if (DateTime.TryParse(value, out DateTime date))
+                            bet.BetDate = date;
+                        else
+                            return Json(new { success = false, message = "Invalid date format" });
+                        break;
+                    case "Match":
+                        if (!string.IsNullOrWhiteSpace(value))
+                            bet.Match = value;
+                        else
+                            return Json(new { success = false, message = "Match cannot be empty" });
+                        break;
+                    case "BetSelection":
+                        if (!string.IsNullOrWhiteSpace(value))
+                            bet.BetSelection = value;
+                        else
+                            return Json(new { success = false, message = "Selection cannot be empty" });
+                        break;
+                    case "Stake":
+                        if (decimal.TryParse(value.Replace("$", "").Replace(",", ""), out decimal stake))
+                            bet.Stake = stake;
+                        else
+                            return Json(new { success = false, message = "Invalid stake format" });
+                        break;
+                    case "Odds":
+                        var oddsStr = value.Replace("+", "");
+                        if (int.TryParse(oddsStr, out int odds))
+                            bet.Odds = odds;
+                        else
+                            return Json(new { success = false, message = "Invalid odds format" });
+                        break;
+                    case "Result":
+                        if (Enum.TryParse<BetResult>(value, out BetResult result))
+                            bet.Result = result;
+                        else
+                            return Json(new { success = false, message = "Invalid result value" });
+                        break;
+                    default:
+                        return Json(new { success = false, message = "Invalid field" });
+                }
+
+                // Recalculate amount won/lost
+                bet.CalculateWinLoss();
+                
+                await _context.SaveChangesAsync();
+                
+                // Return formatted values for display
+                var formattedValue = field switch
+                {
+                    "BetDate" => bet.BetDate.ToShortDateString(),
+                    "Odds" => bet.FormattedOdds,
+                    "Stake" => $"${bet.Stake:F2}",
+                    "Result" => bet.Result.ToString(),
+                    _ => value
+                };
+                
+                return Json(new { 
+                    success = true, 
+                    formattedValue = formattedValue, 
+                    amountWonLost = bet.FormattedAmountWonLost,
+                    resultClass = bet.Result == BetResult.WIN ? "bg-success" : 
+                                  bet.Result == BetResult.LOSS ? "bg-danger" : 
+                                  bet.Result == BetResult.PUSH ? "bg-secondary" : "bg-warning"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         private bool BetExists(int id)

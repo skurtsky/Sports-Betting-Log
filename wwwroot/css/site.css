@@ -20,42 +20,6 @@ body {
   background-color: #f8f9fa;
 }
 
-.card {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  margin-bottom: 1.5rem;
-}
-
-.card-header {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.navbar-brand {
-  font-weight: 600;
-}
-  background-color: #f8f9fa;
-}
-
-.card {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  margin-bottom: 1.5rem;
-}
-
-.card-header {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.navbar-brand {
-  font-weight: 600;
-}
-
-.badge.bg-success, .badge.bg-danger, .badge.bg-warning, .badge.bg-secondary {
-  font-weight: 500;
-}
-  background-color: #f8f9fa;
-}
-
 /* Custom styles for the betting tracker */
 .card {
   box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
@@ -97,6 +61,10 @@ body {
   background-color: #6c757d !important;
 }
 
+.badge.bg-success, .badge.bg-danger, .badge.bg-warning, .badge.bg-secondary {
+  font-weight: 500;
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
@@ -105,3 +73,31 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* Inline Editing styles */
+.editable {
+  cursor: pointer;
+  position: relative;
+}
+
+.editable:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.editable.edit-mode {
+  padding: 0;
+}
+
+.editable .edit-control {
+  margin: 0;
+  border-radius: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.editable .display-value {
+  display: block;
+  padding: 0.5rem;
+}
+
+/* No tooltip for editable cells */

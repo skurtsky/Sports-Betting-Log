@@ -75,8 +75,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form asp-action="Index" method="get" class="mb-4">
-                <div class="input-group">
+            <form asp-action="Index" method="get" class="mb-4">            <div class="input-group">
                     <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Search by match, bet selection or sport...">
                     <button type="submit" class="btn btn-outline-secondary">Search</button>
                     @if (ViewData["CurrentFilter"]?.ToString() != null)
@@ -85,6 +84,8 @@
                     }
                 </div>
             </form>
+            
+            @Html.AntiForgeryToken()
             
             <div class="table-responsive">
                 <table class="table table-hover">
@@ -108,25 +109,89 @@
                             </th>
                             <th>Actions</th>
                         </tr>
-                    </thead>
-                    <tbody>
+                    </thead>                    <tbody>
                         @foreach (var item in Model)
                         {
-                            <tr>
-                                <td>@item.BetDate.ToShortDateString()</td>
-                                <td>@(item.SportLeague?.Name ?? "Unknown")</td>
-                                <td>@item.Match</td>
-                                <td>@item.BetSelection</td>
-                                <td>$@item.Stake.ToString("F2")</td>
-                                <td>@item.FormattedOdds</td>
-                                <td>
+                            <tr data-bet-id="@item.Id">                                <td class="editable" data-field="BetDate" data-type="date">
+                                    <span class="display-value">@item.BetDate.ToShortDateString()</span>
+                                    <input type="date" class="form-control edit-control d-none" value="@item.BetDate.ToString("yyyy-MM-dd")" />
+                                </td>
+                                <td class="editable" data-field="SportLeagueId" data-type="select">
+                                    <span class="display-value">@(item.SportLeague?.Name ?? "Unknown")</span>
+                                    <select class="form-control edit-control d-none">
+                                        @foreach (var sportLeague in ViewBag.SportLeagues)
+                                        {
+                                            if (item.SportLeagueId == sportLeague.Id)
+                                            {
+                                                <option value="@sportLeague.Id" selected>@sportLeague.Name</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@sportLeague.Id">@sportLeague.Name</option>
+                                            }
+                                        }
+                                    </select>
+                                </td>
+                                <td class="editable" data-field="Match" data-type="text">
+                                    <span class="display-value">@item.Match</span>
+                                    <input type="text" class="form-control edit-control d-none" value="@item.Match" />
+                                </td>
+                                <td class="editable" data-field="BetSelection" data-type="text">
+                                    <span class="display-value">@item.BetSelection</span>
+                                    <input type="text" class="form-control edit-control d-none" value="@item.BetSelection" />
+                                </td>
+                                <td class="editable" data-field="Stake" data-type="number">
+                                    <span class="display-value">$@item.Stake.ToString("F2")</span>
+                                    <input type="text" class="form-control edit-control d-none" value="@item.Stake.ToString("F2")" />
+                                </td>
+                                <td class="editable" data-field="Odds" data-type="number">
+                                    <span class="display-value">@item.FormattedOdds</span>
+                                    <input type="text" class="form-control edit-control d-none" value="@item.Odds" />
+                                </td>
+                                <td class="editable" data-field="Result" data-type="select">
                                     <span class="badge @(item.Result == SportsBettingTracker.Models.BetResult.WIN ? "bg-success" : 
                                                       item.Result == SportsBettingTracker.Models.BetResult.LOSS ? "bg-danger" :
-                                                      item.Result == SportsBettingTracker.Models.BetResult.PUSH ? "bg-secondary" : "bg-warning")">
+                                                      item.Result == SportsBettingTracker.Models.BetResult.PUSH ? "bg-secondary" : "bg-warning") display-value">
                                         @item.Result
-                                    </span>
+                                    </span>                                    <select class="form-control edit-control d-none">
+                                        @if (item.Result == SportsBettingTracker.Models.BetResult.WIN)
+                                        {
+                                            <option value="WIN" selected>WIN</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="WIN">WIN</option>
+                                        }
+                                        
+                                        @if (item.Result == SportsBettingTracker.Models.BetResult.LOSS)
+                                        {
+                                            <option value="LOSS" selected>LOSS</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="LOSS">LOSS</option>
+                                        }
+                                        
+                                        @if (item.Result == SportsBettingTracker.Models.BetResult.PUSH)
+                                        {
+                                            <option value="PUSH" selected>PUSH</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="PUSH">PUSH</option>
+                                        }
+                                        
+                                        @if (item.Result == SportsBettingTracker.Models.BetResult.PENDING)
+                                        {
+                                            <option value="PENDING" selected>PENDING</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="PENDING">PENDING</option>
+                                        }
+                                    </select>
                                 </td>
-                                <td>@item.FormattedAmountWonLost</td>
+                                <td class="amount-won-lost">@item.FormattedAmountWonLost</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary">Edit</a>
@@ -167,7 +232,115 @@
                         Next
                     </a>
                 </div>
-            </div>
-        </div>
+            </div>        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Handle double-click on editable cells
+            $('.editable').dblclick(function() {
+                // Check if another cell is already being edited
+                if ($('.edit-mode').length > 0) {
+                    // If so, cancel that edit first
+                    cancelEdit();
+                }
+                
+                // Enter edit mode for this cell
+                $(this).addClass('edit-mode');
+                $(this).find('.display-value').addClass('d-none');
+                $(this).find('.edit-control').removeClass('d-none').focus();
+            });
+            
+            // Handle Enter key press to save
+            $('.edit-control').on('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    saveEdit($(this).closest('.editable'));
+                } else if (e.key === 'Escape') {
+                    cancelEdit();
+                }
+            });
+            
+            // Handle click outside to save
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.edit-mode').length && $('.edit-mode').length > 0) {
+                    saveEdit($('.edit-mode'));
+                }
+            });
+            
+            // Handle select control change
+            $('select.edit-control').on('change', function() {
+                saveEdit($(this).closest('.editable'));
+            });
+            
+            // Handle date control change
+            $('input[type="date"].edit-control').on('change', function() {
+                saveEdit($(this).closest('.editable'));
+            });
+            
+            function saveEdit(cell) {
+                const betId = cell.closest('tr').data('bet-id');
+                const field = cell.data('field');
+                const editControl = cell.find('.edit-control');
+                const value = editControl.val();
+                const displayValue = cell.find('.display-value');
+                const originalValue = displayValue.text();
+                
+                // Show loading state
+                displayValue.html('<i class="spinner-border spinner-border-sm" role="status"></i>');
+                
+                // Send AJAX request to save changes
+                $.ajax({
+                    url: '@Url.Action("QuickEdit")',
+                    type: 'POST',
+                    data: {
+                        id: betId,
+                        field: field,
+                        value: value,
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Update the displayed value with formatted value
+                            if (field === 'Result') {
+                                displayValue.text(response.formattedValue);
+                                // Update the badge class
+                                displayValue.removeClass('bg-success bg-danger bg-warning bg-secondary')
+                                           .addClass(response.resultClass);
+                            } else {
+                                displayValue.text(response.formattedValue);
+                            }
+                            
+                            // Update the Amount Won/Lost column if necessary
+                            if (['BetDate', 'Stake', 'Odds', 'Result'].includes(field)) {
+                                cell.closest('tr').find('.amount-won-lost').text(response.amountWonLost);
+                            }
+                        } else {
+                            // Show error and revert to original value
+                            alert(response.message);
+                            displayValue.text(originalValue);
+                        }
+                    },
+                    error: function() {
+                        alert('An error occurred while saving changes.');
+                        displayValue.text(originalValue);
+                    },
+                    complete: function() {
+                        exitEditMode(cell);
+                    }
+                });
+            }
+            
+            function cancelEdit() {
+                exitEditMode($('.edit-mode'));
+            }
+            
+            function exitEditMode(cell) {
+                cell.removeClass('edit-mode');
+                cell.find('.display-value').removeClass('d-none');
+                cell.find('.edit-control').addClass('d-none');
+            }
+        });
+    </script>
+}
