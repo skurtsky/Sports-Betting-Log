@@ -250,7 +250,17 @@
                 // Enter edit mode for this cell
                 $(this).addClass('edit-mode');
                 $(this).find('.display-value').addClass('d-none');
-                $(this).find('.edit-control').removeClass('d-none').focus();
+                const editControl = $(this).find('.edit-control');
+                editControl.removeClass('d-none').focus();
+
+                // Handle specific control types
+                if (editControl.is('select')) {
+                    // Show 4 options at once for dropdowns
+                    editControl.attr('size', '4');
+                } else if (editControl.is('input[type="date"]')) {
+                    // Automatically open the date picker
+                    editControl[0].showPicker();
+                }
             });
             
             // Handle Enter key press to save
@@ -271,12 +281,21 @@
             
             // Handle select control change
             $('select.edit-control').on('change', function() {
+                // Reset the size attribute after selection
+                $(this).removeAttr('size');
                 saveEdit($(this).closest('.editable'));
             });
             
             // Handle date control change
             $('input[type="date"].edit-control').on('change', function() {
                 saveEdit($(this).closest('.editable'));
+            });
+            
+            // Reset dropdown size when clicking outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).is('select.edit-control')) {
+                    $('select.edit-control').removeAttr('size');
+                }
             });
             
             function saveEdit(cell) {
@@ -333,13 +352,18 @@
             }
             
             function cancelEdit() {
+                // Reset dropdown size when canceling edit
+                $('.edit-control').removeAttr('size');
                 exitEditMode($('.edit-mode'));
             }
             
             function exitEditMode(cell) {
                 cell.removeClass('edit-mode');
                 cell.find('.display-value').removeClass('d-none');
-                cell.find('.edit-control').addClass('d-none');
+                const editControl = cell.find('.edit-control');
+                editControl.addClass('d-none');
+                // Reset dropdown size when exiting edit mode
+                editControl.removeAttr('size');
             }
         });
     </script>

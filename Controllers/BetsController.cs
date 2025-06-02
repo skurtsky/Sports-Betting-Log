@@ -685,7 +685,7 @@ namespace SportsBettingTracker.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> QuickEdit(int id, string field, string value)
         {
-            var bet = await _context.Bets.FindAsync(id);
+            var bet = await _context.Bets.Include(b => b.SportLeague).FirstOrDefaultAsync(b => b.Id == id);
             if (bet == null)
             {
                 return Json(new { success = false, message = "Bet not found" });
@@ -695,6 +695,18 @@ namespace SportsBettingTracker.Controllers
             {
                 switch (field)
                 {
+                    case "SportLeagueId":
+                        if (int.TryParse(value, out int sportLeagueId))
+                        {
+                            var league = await _context.SportLeagues.FindAsync(sportLeagueId);
+                            if (league == null)
+                                return Json(new { success = false, message = "Sport/League not found" });
+                            bet.SportLeagueId = sportLeagueId;
+                            bet.SportLeague = league; // Update the navigation property for the response
+                        }
+                        else
+                            return Json(new { success = false, message = "Invalid Sport/League selection" });
+                        break;
                     case "BetDate":
                         if (DateTime.TryParse(value, out DateTime date))
                             bet.BetDate = date;
@@ -748,6 +760,7 @@ namespace SportsBettingTracker.Controllers
                     "Odds" => bet.FormattedOdds,
                     "Stake" => $"${bet.Stake:F2}",
                     "Result" => bet.Result.ToString(),
+                    "SportLeagueId" => bet.SportLeague?.Name ?? "Unknown",
                     _ => value
                 };
                 
