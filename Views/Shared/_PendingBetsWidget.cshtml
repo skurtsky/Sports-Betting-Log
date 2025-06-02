@@ -1,0 +1,94 @@
+@model IEnumerable<SportsBettingTracker.Models.Bet>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Pending Bets</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover" id="pendingBetsTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Sport/League</th>
+                        <th>Match</th>
+                        <th>Selection</th>
+                        <th>Stake</th>
+                        <th>Odds</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var bet in Model)
+                    {
+                        <tr>
+                            <td class="editable" data-id="@bet.Id" data-field="BetDate">
+                                <span class="display-value">@bet.BetDate.ToShortDateString()</span>
+                                <input type="date" class="form-control edit-control d-none" value="@bet.BetDate.ToString("yyyy-MM-dd")" />
+                            </td>                            <td class="editable" data-id="@bet.Id" data-field="SportLeagueId">
+                                <span class="display-value">@(bet.SportLeague?.Name ?? "Unknown")</span>
+                                <select class="form-control edit-control d-none" asp-items="@(new SelectList(ViewBag.SportLeagues, "Id", "Name", bet.SportLeagueId))"></select>
+                            </td>
+                            <td class="editable" data-id="@bet.Id" data-field="Match">
+                                <span class="display-value">@bet.Match</span>
+                                <input type="text" class="form-control edit-control d-none" value="@bet.Match" />
+                            </td>
+                            <td class="editable" data-id="@bet.Id" data-field="BetSelection">
+                                <span class="display-value">@bet.BetSelection</span>
+                                <input type="text" class="form-control edit-control d-none" value="@bet.BetSelection" />
+                            </td>
+                            <td class="editable" data-id="@bet.Id" data-field="Stake">
+                                <span class="display-value">$@bet.Stake.ToString("F2")</span>
+                                <input type="number" step="0.01" class="form-control edit-control d-none" value="@bet.Stake" />
+                            </td>
+                            <td class="editable" data-id="@bet.Id" data-field="Odds">
+                                <span class="display-value">@bet.FormattedOdds</span>
+                                <input type="number" class="form-control edit-control d-none" value="@bet.Odds" />
+                            </td>
+                            <td class="editable" data-id="@bet.Id" data-field="Result">
+                                <span class="display-value">@bet.Result</span>                                <select class="form-control edit-control d-none">
+                                    @foreach (var result in Enum.GetValues(typeof(SportsBettingTracker.Models.BetResult)))
+                                    {
+                                        if (result.Equals(bet.Result))
+                                        {
+                                            <option value="@result" selected>@result</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@result">@result</option>
+                                        }
+                                    }
+                                </select>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // When a value changes in the pending bets widget
+    $('#pendingBetsTable .edit-control').on('change', function() {
+        const cell = $(this).closest('.editable');
+        saveEdit(cell).then(function(response) {
+            if (response.success) {
+                // If the result was changed from PENDING, remove the row
+                if (cell.data('field') === 'Result' && response.formattedValue !== 'PENDING') {
+                    cell.closest('tr').fadeOut(400, function() {
+                        $(this).remove();
+                        // If no more pending bets, show a message
+                        if ($('#pendingBetsTable tbody tr').length === 0) {
+                            $('#pendingBetsTable tbody').append(
+                                '<tr><td colspan="7" class="text-center">No pending bets</td></tr>'
+                            );
+                        }
+                    });
+                }
+            }
+        });
+    });
+});
+</script>

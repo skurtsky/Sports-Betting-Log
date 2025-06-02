@@ -27,13 +27,18 @@ namespace SportsBettingTracker.Controllers
             DateTime startDate = GetStartDateFromRange(dateRange);
             DateTime endDate = DateTime.Today;
 
+            // Get SportLeagues for the pending bets widget dropdowns
+            ViewBag.SportLeagues = await _context.SportLeagues.OrderBy(sl => sl.Name).ToListAsync();
+
             var bets = await _context.Bets
                 .Include(b => b.SportLeague)
                 .Where(b => b.BetDate >= startDate && b.BetDate <= endDate)
-                .ToListAsync();            // Calculate net profit by sport/league
+                .ToListAsync();
+
+            // Calculate net profit by sport/league
             var profitBySport = bets
-                .Where(b => b.AmountWonLost.HasValue) // Only include bets with results
-                .GroupBy(b => b.SportLeague.Name)
+                .Where(b => b.AmountWonLost.HasValue && b.SportLeague != null)
+                .GroupBy(b => b.SportLeague!.Name)
                 .Select(g => new ProfitBySport
                 {
                     SportLeagueName = g.Key,
@@ -47,7 +52,7 @@ namespace SportsBettingTracker.Controllers
                 
             // Calculate net profit by bet type
             var profitByBetType = bets
-                .Where(b => b.AmountWonLost.HasValue) // Only include bets with results
+                .Where(b => b.AmountWonLost.HasValue)
                 .GroupBy(b => b.BetType)
                 .Select(g => new ProfitByBetType
                 {
@@ -62,7 +67,7 @@ namespace SportsBettingTracker.Controllers
 
             // Prepare data for profit chart
             var chartData = bets
-                .Where(b => b.AmountWonLost.HasValue) // Only include bets with results
+                .Where(b => b.AmountWonLost.HasValue)
                 .GroupBy(b => b.BetDate.ToString("MM/dd/yyyy"))
                 .OrderBy(g => DateTime.Parse(g.Key))
                 .Select(g => new
@@ -70,7 +75,9 @@ namespace SportsBettingTracker.Controllers
                     Date = g.Key,
                     Profit = g.Sum(b => b.AmountWonLost ?? 0)
                 })
-                .ToList();            // Calculate streak data
+                .ToList();
+
+            // Calculate streak data
             var completedBets = bets
                 .Where(b => b.Result != BetResult.PENDING)
                 .OrderBy(b => b.BetDate)
@@ -98,7 +105,7 @@ namespace SportsBettingTracker.Controllers
                 TotalWins = bets.Count(b => b.Result == BetResult.WIN),
                 TotalLosses = bets.Count(b => b.Result == BetResult.LOSS),
                 TotalPushes = bets.Count(b => b.Result == BetResult.PUSH),
-                PendingBets = bets.Count(b => b.Result == BetResult.PENDING),
+                PendingBets = bets.Where(b => b.Result == BetResult.PENDING).ToList(),
                 TotalStake = totalStake,
                 NetProfit = netProfit,
                 ROI = roi,
@@ -106,7 +113,8 @@ namespace SportsBettingTracker.Controllers
                     ? (decimal)bets.Count(b => b.Result == BetResult.WIN) / bets.Count(b => b.Result != BetResult.PENDING) * 100 
                     : 0,
                 CurrentStreak = currentStreak,
-                StreakType = streakType,                LongestWinStreak = longestWinStreak,
+                StreakType = streakType,
+                LongestWinStreak = longestWinStreak,
                 LongestLossStreak = longestLossStreak,
                 ProfitBySport = profitBySport,
                 ProfitByBetType = profitByBetType,

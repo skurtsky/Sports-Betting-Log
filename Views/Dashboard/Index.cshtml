@@ -77,17 +77,23 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
+        <div class="col-md-4">                <div class="card">
                 <div class="card-header">
                     <h5>Pending Bets</h5>
                 </div>
                 <div class="card-body">
-                    <p class="card-text fs-2">@Model.PendingBets</p>
+                    <p class="card-text fs-2">@Model.PendingBets.Count()</p>
                 </div>
             </div>
         </div>
-    </div>    <div class="row mb-4">
+    </div>    <!-- Pending Bets Widget -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <partial name="_PendingBetsWidget" model="Model.PendingBets" />
+        </div>
+    </div>
+
+    <div class="row mb-4">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
@@ -177,6 +183,13 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Pending Bets Widget -->
+        <div class="col-12">
+            <partial name="_PendingBetsWidget" model="Model.PendingBets" />
         </div>
     </div>
 </div>

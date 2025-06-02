@@ -1,3 +1,5 @@
+using SportsBettingTracker.Models;
+
 namespace SportsBettingTracker.ViewModels
 {
     public class DashboardViewModel
@@ -9,7 +11,6 @@ namespace SportsBettingTracker.ViewModels
         public int TotalWins { get; set; }
         public int TotalLosses { get; set; }
         public int TotalPushes { get; set; }
-        public int PendingBets { get; set; }
         public decimal NetProfit { get; set; }
         public decimal TotalStake { get; set; }
         public decimal WinPercentage { get; set; }
@@ -19,11 +20,12 @@ namespace SportsBettingTracker.ViewModels
         public int LongestLossStreak { get; set; }
         public List<ProfitBySport> ProfitBySport { get; set; } = new List<ProfitBySport>();
         public List<ProfitByBetType> ProfitByBetType { get; set; } = new List<ProfitByBetType>();
+        public IEnumerable<Bet> PendingBets { get; set; } = new List<Bet>();
         
         public List<string> ChartLabels { get; set; } = new List<string>();
         public List<decimal> ChartData { get; set; } = new List<decimal>();
         public List<decimal> CumulativeChartData { get; set; } = new List<decimal>();
-          public string FormattedNetProfit => 
+        public string FormattedNetProfit => 
             NetProfit >= 0 ? $"+${NetProfit:F2}" : $"-${Math.Abs(NetProfit):F2}";
             
         public string FormattedWinPercentage => $"{WinPercentage:F1}%";
