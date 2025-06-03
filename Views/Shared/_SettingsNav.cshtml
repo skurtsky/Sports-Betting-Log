@@ -4,12 +4,19 @@
     
     bool IsActive(string controllerName, string actionName) => 
         controller == controllerName && action == actionName;
+
+    bool IsAnyAction(string controllerName) =>
+        controller == controllerName;
 }
 
 <div class="list-group mb-4">
     <a class="list-group-item list-group-item-action @(IsActive("Home", "Settings") ? "active" : "")" 
        asp-controller="Home" asp-action="Settings">
         General Settings
+    </a>
+    <a class="list-group-item list-group-item-action @(IsAnyAction("BetSettings") ? "active" : "")" 
+       asp-controller="BetSettings" asp-action="Index">
+        Bet Settings
     </a>
     <a class="list-group-item list-group-item-action @(IsActive("Account", "AccountSettings") ? "active" : "")" 
        asp-controller="Account" asp-action="AccountSettings">

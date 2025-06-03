@@ -1,0 +1,113 @@
+@model IEnumerable<SportsBettingTracker.Models.SportLeague>
+@{
+    ViewData["Title"] = "Bet Settings";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-3">
+            <partial name="_SettingsNav" />
+        </div>
+        <div class="col-md-9">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3>@ViewData["Title"]</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Sports & Leagues Card -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Sports / Leagues</h5>
+                                    <a asp-action="CreateLeague" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-plus"></i> Add New
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    <p>Manage the sports and leagues you bet on.</p>
+                                    
+                                    @if (!Model.Any())
+                                    {
+                                        <div class="alert alert-info">
+                                            No sports/leagues found. Click "Add New" to create one.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <ul class="list-group">
+                                            @foreach (var item in Model.OrderBy(l => l.DisplayOrder))
+                                            {
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>@item.Name</span>
+                                                    <div class="btn-group" role="group">
+                                                        <form asp-action="MoveUpLeague" asp-route-id="@item.Id" method="post" style="display:inline">
+                                                            <button class="btn btn-sm btn-outline-secondary" title="Move Up">&#8593;</button>
+                                                        </form>
+                                                        <form asp-action="MoveDownLeague" asp-route-id="@item.Id" method="post" style="display:inline">
+                                                            <button class="btn btn-sm btn-outline-secondary" title="Move Down">&#8595;</button>
+                                                        </form>
+                                                        <a asp-action="EditLeague" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                        <a asp-action="DeleteLeague" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bet Types Card -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Bet Types</h5>
+                                    <a asp-action="CreateBetType" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-plus"></i> Add New
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    <p>Manage the types of bets you place.</p>
+                                    
+                                    @if (ViewBag.BetTypes == null || ViewBag.BetTypes.Count == 0)
+                                    {
+                                        <div class="alert alert-info">
+                                            No bet types found. Click "Add New" to create one.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <ul class="list-group">
+                                            @foreach (var item in ViewBag.BetTypes)
+                                            {
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <div>                                                        <span>@item.DisplayName</span>
+                                                        @if (!string.IsNullOrEmpty(item.Description))
+                                                        {
+                                                            <small class="d-block text-muted">@item.Description</small>
+                                                        }
+                                                    </div>
+                                                    <div class="btn-group" role="group">
+                                                        <form asp-action="MoveUpBetType" asp-route-id="@item.Id" method="post" style="display:inline">
+                                                            <button class="btn btn-sm btn-outline-secondary" title="Move Up">&#8593;</button>
+                                                        </form>
+                                                        <form asp-action="MoveDownBetType" asp-route-id="@item.Id" method="post" style="display:inline">
+                                                            <button class="btn btn-sm btn-outline-secondary" title="Move Down">&#8595;</button>
+                                                        </form>
+                                                        <a asp-action="EditBetType" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                        <a asp-action="DeleteBetType" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

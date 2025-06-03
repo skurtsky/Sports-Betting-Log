@@ -17,15 +17,18 @@ namespace SportsBettingTracker.Controllers
         public SportLeaguesController(ApplicationDbContext context)
         {
             _context = context;
-        }
-
-        // GET: SportLeagues
-        public async Task<IActionResult> Index()
+        }        // GET: SportLeagues
+        public IActionResult Index()
         {
+            // Redirect to the new BetSettings controller
+            return RedirectToAction("Index", "BetSettings");
+            
+            /*
             var leagues = await _context.SportLeagues.ToListAsync();
             var betTypes = await _context.BetTypeConfigurations.OrderBy(b => b.DisplayOrder).ToListAsync();
             ViewBag.BetTypes = betTypes;
             return View(leagues);
+            */
         }
 
         // GET: SportLeagues/Details/5
