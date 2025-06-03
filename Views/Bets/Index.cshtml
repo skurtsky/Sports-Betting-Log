@@ -322,14 +322,23 @@
                                 <option value="@result">@result</option>
                             }
                         </select>
-                    </div>
-                    <div class="mb-3">
+                    </div>                    <div class="mb-3">
                         <label class="form-label">Sport/League</label>
                         <select class="form-select" name="SportLeagueId">
                             <option value="">No Change</option>
                             @foreach (var league in ViewBag.SportLeagues)
                             {
                                 <option value="@league.Id">@league.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bet Type</label>
+                        <select class="form-select" name="BetType">
+                            <option value="">No Change</option>
+                            @foreach (var betType in Enum.GetValues(typeof(SportsBettingTracker.Models.BetType)))
+                            {
+                                <option value="@betType">@betType</option>
                             }
                         </select>
                     </div>
@@ -403,12 +412,11 @@
         $('#bulkEditConfirm').click(function() {
             var selectedIds = $('.select-bet:checked').map(function() {
                 return parseInt($(this).val());
-            }).get();
-
-            var formData = {
+            }).get();            var formData = {
                 ids: selectedIds,
                 result: $('#bulkEditForm select[name="Result"]').val(),
-                sportLeagueId: $('#bulkEditForm select[name="SportLeagueId"]').val()
+                sportLeagueId: $('#bulkEditForm select[name="SportLeagueId"]').val(),
+                betType: $('#bulkEditForm select[name="BetType"]').val()
             };
 
             $.ajax({

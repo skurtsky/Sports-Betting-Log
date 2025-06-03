@@ -228,9 +228,11 @@ namespace SportsBettingTracker.Controllers
             
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
-        }        // POST: Bets/Edit/5        [HttpPost]
+        }        // POST: Bets/Edit/5
+        [HttpPost]
+        [ActionName("Edit")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result")] Bet bet)
+        public async Task<IActionResult> EditPost(int id, [Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result")] Bet bet)
         {
             if (id != bet.Id)
             {
@@ -964,8 +966,7 @@ namespace SportsBettingTracker.Controllers
                     .ToListAsync();
 
                 foreach (var bet in bets)
-                {
-                    if (!string.IsNullOrEmpty(model.Result))
+                {                    if (!string.IsNullOrEmpty(model.Result))
                     {
                         if (Enum.TryParse<BetResult>(model.Result, out var result))
                         {
@@ -980,6 +981,14 @@ namespace SportsBettingTracker.Controllers
                         if (league != null)
                         {
                             bet.SportLeagueId = sportLeagueId;
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(model.BetType))
+                    {
+                        if (Enum.TryParse<BetType>(model.BetType, out var betType))
+                        {
+                            bet.BetType = betType;
                         }
                     }
                 }
