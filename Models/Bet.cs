@@ -9,9 +9,17 @@ namespace SportsBettingTracker.Models
         LOSS,
         PUSH,
         PENDING
-    }    public class Bet
+    }    
+    
+    public class Bet
     {
         public int Id { get; set; }
+        
+        // User relationship
+        public string? UserId { get; set; }
+        
+        [ForeignKey("UserId")]
+        public ApplicationUser? User { get; set; }
         
         [Required]
         [DataType(DataType.Date)]

@@ -9,13 +9,15 @@ using System.Threading.Tasks;
 
 namespace SportsBettingTracker.Controllers
 {
+    [Microsoft.AspNetCore.Authorization.Authorize]
     public class DashboardController : Controller
-    {
-        private readonly ApplicationDbContext _context;
+    {        private readonly ApplicationDbContext _context;
+        private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> _userManager;
 
-        public DashboardController(ApplicationDbContext context)
+        public DashboardController(ApplicationDbContext context, Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: Dashboard
@@ -25,15 +27,30 @@ namespace SportsBettingTracker.Controllers
             dateRange ??= "YTD";
 
             DateTime startDate = GetStartDateFromRange(dateRange);
-            DateTime endDate = DateTime.Today;
-
-            // Get SportLeagues for the pending bets widget dropdowns
+            DateTime endDate = DateTime.Today;            // Get SportLeagues for the pending bets widget dropdowns
             ViewBag.SportLeagues = await _context.SportLeagues.OrderBy(sl => sl.Name).ToListAsync();
 
-            var bets = await _context.Bets
+            // Get the current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+            bool isDemoUser = currentUser?.IsDemoUser ?? false;
+
+            // Base query
+            var betsQuery = _context.Bets
                 .Include(b => b.SportLeague)
-                .Where(b => b.BetDate >= startDate && b.BetDate <= endDate)
-                .ToListAsync();
+                .Where(b => b.BetDate >= startDate && b.BetDate <= endDate);
+                
+            // Filter by user
+            if (isDemoUser)
+            {
+                betsQuery = betsQuery.Where(b => b.UserId == userId || b.UserId == null);
+            }
+            else if (userId != null)
+            {
+                betsQuery = betsQuery.Where(b => b.UserId == userId);
+            }
+                
+            var bets = await betsQuery.ToListAsync();
 
             // Calculate net profit by sport/league
             var profitBySport = bets

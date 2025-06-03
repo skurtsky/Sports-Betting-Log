@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SportsBettingTracker.Attributes;
 using SportsBettingTracker.Data;
 using SportsBettingTracker.Models;
 using System.Linq;
@@ -7,6 +8,8 @@ using System.Threading.Tasks;
 
 namespace SportsBettingTracker.Controllers
 {
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [DemoUserRestriction]
     public class SportLeaguesController : Controller
     {
         private readonly ApplicationDbContext _context;

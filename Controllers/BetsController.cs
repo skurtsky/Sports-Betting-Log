@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SportsBettingTracker.Data;
+using SportsBettingTracker.Extensions;
 using SportsBettingTracker.Models;
 using SportsBettingTracker.ViewModels;
 using Microsoft.VisualBasic.FileIO; // Add this for TextFieldParser
@@ -13,14 +14,16 @@ using System.IO; // For file handling
 
 namespace SportsBettingTracker.Controllers
 {
+    [Microsoft.AspNetCore.Authorization.Authorize]
     public class BetsController : Controller
-    {
-        private readonly ApplicationDbContext _context;
+    {        private readonly ApplicationDbContext _context;
+        private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> _userManager;
 
-        public BetsController(ApplicationDbContext context)
+        public BetsController(ApplicationDbContext context, Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager)
         {
             _context = context;
-        }        // GET: Bets
+            _userManager = userManager;
+        }// GET: Bets
         public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
         {
             ViewData["CurrentSort"] = sortOrder;
@@ -39,12 +42,26 @@ namespace SportsBettingTracker.Controllers
             }
 
             ViewData["CurrentFilter"] = searchString;
+              // Add sport leagues list for quick edit dropdowns
+            ViewBag.SportLeagues = await _context.SportLeagues.OrderBy(s => s.Name).ToListAsync();            // Get the current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+            bool isDemoUser = currentUser?.IsDemoUser ?? false;
             
-            // Add sport leagues list for quick edit dropdowns
-            ViewBag.SportLeagues = await _context.SportLeagues.OrderBy(s => s.Name).ToListAsync();
+            // Base query with the include
+            IQueryable<Bet> betsQuery = _context.Bets.Include(b => b.SportLeague);
+            
+            // Filter bets by current user
+            if (isDemoUser)
+            {
+                betsQuery = betsQuery.Where(b => b.UserId == userId || b.UserId == null);
+            }
+            else if (userId != null)
+            {
+                betsQuery = betsQuery.Where(b => b.UserId == userId);
+            }
 
-            var bets = from b in _context.Bets.Include(b => b.SportLeague)
-                       select b;
+            var bets = betsQuery;
 
             if (!string.IsNullOrEmpty(searchString))
             {                bets = bets.Where(b => 
@@ -65,9 +82,7 @@ namespace SportsBettingTracker.Controllers
 
             int pageSize = 10;
             return View(await PaginatedList<Bet>.CreateAsync(bets.AsNoTracking(), pageNumber ?? 1, pageSize));
-        }
-
-        // GET: Bets/Details/5
+        }        // GET: Bets/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -75,12 +90,25 @@ namespace SportsBettingTracker.Controllers
                 return NotFound();
             }
 
+            // Get current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+            bool isDemoUser = currentUser?.IsDemoUser ?? false;
+
             var bet = await _context.Bets
                 .Include(b => b.SportLeague)
                 .FirstOrDefaultAsync(m => m.Id == id);
+                
             if (bet == null)
             {
                 return NotFound();
+            }
+            
+            // Check if user owns the bet or is demo user with access to null userId bets
+            bool canAccess = bet.UserId == userId || (isDemoUser && bet.UserId == null);
+            if (!canAccess)
+            {
+                return Forbid();
             }
 
             return View(bet);
@@ -98,6 +126,15 @@ namespace SportsBettingTracker.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Get current user
+                var currentUser = await _userManager.GetUserAsync(User);
+                
+                // Associate bet with user
+                if (currentUser != null && !currentUser.IsDemoUser)
+                {
+                    bet.UserId = currentUser.Id;
+                }
+                
                 bet.CalculateWinLoss();
                 _context.Add(bet);
                 await _context.SaveChangesAsync();
@@ -105,25 +142,35 @@ namespace SportsBettingTracker.Controllers
             }
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
-        }
-
-        // GET: Bets/Edit/5
+        }        // GET: Bets/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
+            
+            // Get current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+            bool isDemoUser = currentUser?.IsDemoUser ?? false;
 
             var bet = await _context.Bets.FindAsync(id);
             if (bet == null)
             {
                 return NotFound();
             }
+            
+            // Check if user owns the bet or is demo user with access to null userId bets
+            bool canAccess = bet.UserId == userId || (isDemoUser && bet.UserId == null);
+            if (!canAccess)
+            {
+                return Forbid();
+            }
+            
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
-        }        // POST: Bets/Edit/5
-        [HttpPost]
+        }        // POST: Bets/Edit/5        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result")] Bet bet)
         {
@@ -131,6 +178,28 @@ namespace SportsBettingTracker.Controllers
             {
                 return NotFound();
             }
+            
+            // Get current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+            bool isDemoUser = currentUser?.IsDemoUser ?? false;
+            
+            // Get original bet to check ownership
+            var originalBet = await _context.Bets.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
+            if (originalBet == null)
+            {
+                return NotFound();
+            }
+            
+            // Check if user owns the bet or is demo user with access to null userId bets
+            bool canAccess = originalBet.UserId == userId || (isDemoUser && originalBet.UserId == null);
+            if (!canAccess)
+            {
+                return Forbid();
+            }
+            
+            // Preserve the UserId from the original bet
+            bet.UserId = originalBet.UserId;
 
             if (ModelState.IsValid)
             {
@@ -155,15 +224,18 @@ namespace SportsBettingTracker.Controllers
             }
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
-        }
-
-        // GET: Bets/Delete/5
+        }        // GET: Bets/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
+            
+            // Get current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+            bool isDemoUser = currentUser?.IsDemoUser ?? false;
 
             var bet = await _context.Bets
                 .Include(b => b.SportLeague)
@@ -172,18 +244,34 @@ namespace SportsBettingTracker.Controllers
             {
                 return NotFound();
             }
+            
+            // Check if user owns the bet or is demo user with access to null userId bets
+            bool canAccess = bet.UserId == userId || (isDemoUser && bet.UserId == null);
+            if (!canAccess)
+            {
+                return Forbid();
+            }
 
             return View(bet);
-        }
-
-        // POST: Bets/Delete/5
+        }        // POST: Bets/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            // Get current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+            bool isDemoUser = currentUser?.IsDemoUser ?? false;
+            
             var bet = await _context.Bets.FindAsync(id);
             if (bet != null)
             {
+                // Check if user owns the bet or is demo user with access to null userId bets
+                bool canAccess = bet.UserId == userId || (isDemoUser && bet.UserId == null);
+                if (!canAccess)
+                {
+                    return Forbid();
+                }
                 _context.Bets.Remove(bet);
                 await _context.SaveChangesAsync();
             }

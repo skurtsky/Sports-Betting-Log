@@ -1,0 +1,68 @@
+@model SportsBettingTracker.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="text-center mb-0">@ViewData["Title"]</h2>
+            </div>
+            <div class="card-body">
+                <form id="account" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="form-floating mb-3">
+                        <input asp-for="Email" class="form-control" autocomplete="username" aria-required="true" />
+                        <label asp-for="Email" class="form-label"></label>
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input asp-for="Password" class="form-control" autocomplete="current-password" aria-required="true" />
+                        <label asp-for="Password" class="form-label"></label>
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="checkbox mb-3">
+                        <label asp-for="RememberMe">
+                            <input asp-for="RememberMe" />
+                            @Html.DisplayNameFor(m => m.RememberMe)
+                        </label>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button id="login-submit" type="submit" class="btn btn-lg btn-primary">Log in</button>
+                    </div>
+                </form>
+                  <hr class="my-4" />
+                
+                <div class="text-center mb-4">
+                    <p>Don't have an account? <a asp-action="Register">Register</a></p>
+                </div>
+
+                @* Uncomment and configure these options to enable social login *@
+                @*
+                <div class="d-grid gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-dark">
+                        <i class="bi bi-google me-2"></i>Sign in with Google
+                    </button>
+                    <button type="button" class="btn btn-outline-dark">
+                        <i class="bi bi-apple me-2"></i>Sign in with Apple
+                    </button>
+                </div>
+                <hr class="my-4" />
+                *@
+                
+                <form action="/Account/DemoLogin" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-secondary">Try Demo Mode</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

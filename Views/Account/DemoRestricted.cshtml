@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "Demo Mode Restriction";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Demo Mode Restriction</h1>
+    <div class="alert alert-warning mt-4">
+        <p class="lead">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            This action is not allowed in demo mode.
+        </p>
+    </div>
+    <p class="mt-4">
+        Demo mode is designed for testing the application's functionality without making permanent changes.
+        To make changes to the application, please register for a full account.
+    </p>
+    <div class="mt-4">
+        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary">
+            Return to Dashboard
+        </a>
+        <a asp-controller="Account" asp-action="Register" class="btn btn-success ms-2">
+            Create an Account
+        </a>
+    </div>
+</div>

@@ -1,8 +1,57 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Welcome";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container">
+    <div class="row align-items-center">
+        <div class="col-md-6 mb-4 mb-md-0">
+            <h1 class="display-4 mb-4">Track Your Sports Betting Success</h1>
+            <p class="lead mb-4">
+                A simple and intuitive way to track your bets, analyze your performance, and make smarter betting decisions.
+            </p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a asp-area="" asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg px-4 me-md-2">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </a>
+                <a asp-area="" asp-controller="Account" asp-action="Register" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="bi bi-person-plus me-2"></i>Register
+                </a>
+            </div>
+            <form action="/Account/DemoLogin" method="post" class="mt-4">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-info">
+                    <i class="bi bi-play-circle me-2"></i>Try Demo Mode
+                </button>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <h3 class="mb-3">Features</h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="bi bi-graph-up-arrow text-primary me-2"></i>
+                            Track your betting performance with visual dashboards
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-table text-primary me-2"></i>
+                            Record and manage all your bets in one place
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-file-earmark-spreadsheet text-primary me-2"></i>
+                            Import your existing bet history from CSV files
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-trophy text-primary me-2"></i>
+                            Analyze performance by sport, league, and bet type
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-gear text-primary me-2"></i>
+                            Customize settings to match your betting preferences
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

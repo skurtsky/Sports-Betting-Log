@@ -1,0 +1,35 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<SportsBettingTracker.Models.ApplicationUser> SignInManager
+@inject UserManager<SportsBettingTracker.Models.ApplicationUser> UserManager
+
+<ul class="navbar-nav">
+@if (SignInManager.IsSignedIn(User))
+{
+    var user = await UserManager.GetUserAsync(User);
+    var displayName = user != null && !string.IsNullOrEmpty(user.DisplayName) ? user.DisplayName : User.Identity?.Name ?? "User";
+    
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle"></i> @displayName
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item" asp-controller="Account" asp-action="AccountSettings">Account Settings</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <form class="form-inline" asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="dropdown-item">Logout</button>
+                </form>
+            </li>
+        </ul>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+    </li>
+}
+</ul>

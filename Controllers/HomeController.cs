@@ -13,10 +13,22 @@ public class HomeController : Controller
         _logger = logger;
     }    public IActionResult Index()
     {
-        return RedirectToAction("Index", "Dashboard");
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return RedirectToAction("Index", "Dashboard");
+        }
+        else
+        {
+            // Show the welcome page when not logged in
+            return View();
+        }
+    }public IActionResult Privacy()
+    {
+        return View();
     }
-
-    public IActionResult Privacy()
+    
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public IActionResult Settings()
     {
         return View();
     }
