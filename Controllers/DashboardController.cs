@@ -39,13 +39,8 @@ namespace SportsBettingTracker.Controllers
             var betsQuery = _context.Bets
                 .Include(b => b.SportLeague)
                 .Where(b => b.BetDate >= startDate && b.BetDate <= endDate);
-                
-            // Filter by user
-            if (isDemoUser)
-            {
-                betsQuery = betsQuery.Where(b => b.UserId == userId || b.UserId == null);
-            }
-            else if (userId != null)
+                  // Filter by user - always restrict to current user's bets
+            if (userId != null)
             {
                 betsQuery = betsQuery.Where(b => b.UserId == userId);
             }

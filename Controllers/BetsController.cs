@@ -118,14 +118,13 @@ namespace SportsBettingTracker.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result")] Bet bet)
-        {
-            if (ModelState.IsValid)
+        {            if (ModelState.IsValid)
             {
                 // Get current user
                 var currentUser = await _userManager.GetUserAsync(User);
                 
-                // Associate bet with user
-                if (currentUser != null && !currentUser.IsDemoUser)
+                // Always associate bet with the current user, including demo users
+                if (currentUser != null)
                 {
                     bet.UserId = currentUser.Id;
                 }
