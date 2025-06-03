@@ -50,13 +50,8 @@ namespace SportsBettingTracker.Controllers
             
             // Base query with the include
             IQueryable<Bet> betsQuery = _context.Bets.Include(b => b.SportLeague);
-            
-            // Filter bets by current user
-            if (isDemoUser)
-            {
-                betsQuery = betsQuery.Where(b => b.UserId == userId || b.UserId == null);
-            }
-            else if (userId != null)
+              // Filter bets by current user - always restrict to the current user's bets
+            if (userId != null)
             {
                 betsQuery = betsQuery.Where(b => b.UserId == userId);
             }
@@ -104,8 +99,8 @@ namespace SportsBettingTracker.Controllers
                 return NotFound();
             }
             
-            // Check if user owns the bet or is demo user with access to null userId bets
-            bool canAccess = bet.UserId == userId || (isDemoUser && bet.UserId == null);
+            // Check if user owns the bet - strict ownership check
+            bool canAccess = bet.UserId == userId;
             if (!canAccess)
             {
                 return Forbid();
@@ -160,9 +155,8 @@ namespace SportsBettingTracker.Controllers
             {
                 return NotFound();
             }
-            
-            // Check if user owns the bet or is demo user with access to null userId bets
-            bool canAccess = bet.UserId == userId || (isDemoUser && bet.UserId == null);
+              // Check if user owns the bet - strict ownership check
+            bool canAccess = bet.UserId == userId;
             if (!canAccess)
             {
                 return Forbid();
@@ -190,9 +184,8 @@ namespace SportsBettingTracker.Controllers
             {
                 return NotFound();
             }
-            
-            // Check if user owns the bet or is demo user with access to null userId bets
-            bool canAccess = originalBet.UserId == userId || (isDemoUser && originalBet.UserId == null);
+              // Check if user owns the bet - strict ownership check
+            bool canAccess = originalBet.UserId == userId;
             if (!canAccess)
             {
                 return Forbid();
@@ -245,8 +238,8 @@ namespace SportsBettingTracker.Controllers
                 return NotFound();
             }
             
-            // Check if user owns the bet or is demo user with access to null userId bets
-            bool canAccess = bet.UserId == userId || (isDemoUser && bet.UserId == null);
+            // Check if user owns the bet - strict ownership check
+            bool canAccess = bet.UserId == userId;
             if (!canAccess)
             {
                 return Forbid();
@@ -265,9 +258,8 @@ namespace SportsBettingTracker.Controllers
             
             var bet = await _context.Bets.FindAsync(id);
             if (bet != null)
-            {
-                // Check if user owns the bet or is demo user with access to null userId bets
-                bool canAccess = bet.UserId == userId || (isDemoUser && bet.UserId == null);
+            {                // Check if user owns the bet - strict ownership check
+                bool canAccess = bet.UserId == userId;
                 if (!canAccess)
                 {
                     return Forbid();
@@ -277,12 +269,18 @@ namespace SportsBettingTracker.Controllers
             }
             
             return RedirectToAction(nameof(Index));
-        }
-
-        // GET: Bets/ExportCsv
+        }        // GET: Bets/ExportCsv
         public async Task<IActionResult> ExportCsv()
         {
-            var bets = await _context.Bets.Include(b => b.SportLeague).ToListAsync();
+            // Get current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+            
+            // Only export bets that belong to the current user
+            var bets = await _context.Bets
+                .Include(b => b.SportLeague)
+                .Where(b => b.UserId == userId)
+                .ToListAsync();
             var csv = new System.Text.StringBuilder();
             csv.AppendLine("Id,BetDate,SportLeague,BetType,Match,BetSelection,Stake,Odds,Result,AmountWonLost");
             foreach (var b in bets)
@@ -695,10 +693,17 @@ namespace SportsBettingTracker.Controllers
                             hasRequiredFields = bet.BetDate != default && 
                                                !string.IsNullOrWhiteSpace(bet.Match) && 
                                                !string.IsNullOrWhiteSpace(bet.BetSelection) && 
-                                               stakeSet && oddsSet;
-
-                            if (hasRequiredFields)
+                                               stakeSet && oddsSet;                            if (hasRequiredFields)
                             {
+                                // Add the current user ID to the bet
+                                var currentUser = await _userManager.GetUserAsync(User);
+                                
+                                // Always associate with current user - this is critical for data isolation
+                                if (currentUser != null)
+                                {
+                                    bet.UserId = currentUser.Id;
+                                }
+                                
                                 _context.Bets.Add(bet);
                                 imported++;
                                 

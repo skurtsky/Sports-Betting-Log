@@ -22,9 +22,7 @@ namespace SportsBettingTracker.Controllers.Api
         {
             _context = context;
             _userManager = userManager;
-        }
-
-        // GET: api/Bets
+        }        // GET: api/Bets
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Bet>>> GetBets()
         {
@@ -35,10 +33,10 @@ namespace SportsBettingTracker.Controllers.Api
                 return Unauthorized();
             }
             
-            // Filter bets by current user
+            // Filter bets by current user - only show bets belonging to this user
             var bets = await _context.Bets
                 .Include(b => b.SportLeague)
-                .Where(b => b.UserId == currentUser.Id || (currentUser.IsDemoUser && b.UserId == null))
+                .Where(b => b.UserId == currentUser.Id)
                 .ToListAsync();
                 
             return bets;
@@ -63,18 +61,15 @@ namespace SportsBettingTracker.Controllers.Api
             {
                 return NotFound();
             }
-            
-            // Check if user owns the bet or is demo user with access to null userId bets
-            bool canAccess = bet.UserId == currentUser.Id || (currentUser.IsDemoUser && bet.UserId == null);
+              // Check if user owns the bet - only allow access to their own bets
+            bool canAccess = bet.UserId == currentUser.Id;
             if (!canAccess)
             {
                 return Forbid();
             }
 
             return bet;
-        }
-
-        // GET: api/Bets/Dashboard
+        }        // GET: api/Bets/Dashboard
         [HttpGet("Dashboard")]
         public async Task<ActionResult<object>> GetDashboardSummary()
         {
@@ -85,10 +80,10 @@ namespace SportsBettingTracker.Controllers.Api
                 return Unauthorized();
             }
             
-            // Filter bets by current user
+            // Filter bets by current user - only show bets belonging to this user
             var bets = await _context.Bets
                 .Include(b => b.SportLeague)
-                .Where(b => b.UserId == currentUser.Id || (currentUser.IsDemoUser && b.UserId == null))
+                .Where(b => b.UserId == currentUser.Id)
                 .ToListAsync();
                 
             // Calculate dashboard summary stats

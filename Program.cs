@@ -54,16 +54,14 @@ var app = builder.Build();
 // Apply migrations at startup
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    try
+    var services = scope.ServiceProvider;    try
     {        var context = services.GetRequiredService<ApplicationDbContext>();
         var logger = services.GetRequiredService<ILogger<Program>>();
         
-        logger.LogInformation("Recreating database with Identity tables");
-        // Force delete and recreate the database to fix migration issues
-        context.Database.EnsureDeleted();
-        context.Database.EnsureCreated();
-        logger.LogInformation("Database recreation complete");
+        logger.LogInformation("Migrating database with Identity tables");
+        // Apply any pending migrations (don't recreate the database)
+        context.Database.Migrate();
+        logger.LogInformation("Database migration complete");
         
         // Seed default admin user if needed
         await SeedDefaultUser(services);
