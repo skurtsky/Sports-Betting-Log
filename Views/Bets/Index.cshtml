@@ -83,8 +83,7 @@
                 <div class="col-md-2">
                     <label class="form-label">Search</label>
                     <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Search...">
-                </div>
-                <div class="col-md-2">
+                </div>                <div class="col-md-2">
                     <label class="form-label">Page Size</label>
                     <select name="pageSize" class="form-select" onchange="this.form.submit()">
                         @foreach (var size in (int[])ViewData["PageSizeOptions"])
@@ -94,6 +93,9 @@
                             </option>
                         }
                     </select>
+                </div>                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">Clear Filters</button>
                 </div>
                 <input type="hidden" name="sortOrder" value="@ViewData["CurrentSort"]" />
             </form>
@@ -166,27 +168,75 @@
                                 <div class="form-check">
                                     <input class="form-check-input select-all" type="checkbox">
                                 </div>
+                            </th>                            <th>
+                                <a asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["DateSortParm"]"
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                   asp-route-dateFilter="@ViewData["DateFilter"]"
+                                   asp-route-sportFilter="@ViewData["SportFilter"]"
+                                   asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                                   asp-route-resultFilter="@ViewData["ResultFilter"]"
+                                   asp-route-pageSize="@ViewData["CurrentPageSize"]">Date</a>
                             </th>
                             <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]">Date</a>
+                                <a asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["SportSortParm"]"
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                   asp-route-dateFilter="@ViewData["DateFilter"]"
+                                   asp-route-sportFilter="@ViewData["SportFilter"]"
+                                   asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                                   asp-route-resultFilter="@ViewData["ResultFilter"]"
+                                   asp-route-pageSize="@ViewData["CurrentPageSize"]">Sport/League</a>
                             </th>
                             <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["SportSortParm"]">Sport/League</a>
+                                <a asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["MatchSortParm"]"
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                   asp-route-dateFilter="@ViewData["DateFilter"]"
+                                   asp-route-sportFilter="@ViewData["SportFilter"]"
+                                   asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                                   asp-route-resultFilter="@ViewData["ResultFilter"]"
+                                   asp-route-pageSize="@ViewData["CurrentPageSize"]">Match</a>
                             </th>
                             <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["MatchSortParm"]">Match</a>
+                                <a asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["SelectionSortParm"]"
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                   asp-route-dateFilter="@ViewData["DateFilter"]"
+                                   asp-route-sportFilter="@ViewData["SportFilter"]"
+                                   asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                                   asp-route-resultFilter="@ViewData["ResultFilter"]"
+                                   asp-route-pageSize="@ViewData["CurrentPageSize"]">Selection</a>
                             </th>
                             <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["SelectionSortParm"]">Selection</a>
+                                <a asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["StakeSortParm"]"
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                   asp-route-dateFilter="@ViewData["DateFilter"]"
+                                   asp-route-sportFilter="@ViewData["SportFilter"]"
+                                   asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                                   asp-route-resultFilter="@ViewData["ResultFilter"]"
+                                   asp-route-pageSize="@ViewData["CurrentPageSize"]">Stake</a>
                             </th>
                             <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["StakeSortParm"]">Stake</a>
+                                <a asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["OddsSortParm"]"
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                   asp-route-dateFilter="@ViewData["DateFilter"]"
+                                   asp-route-sportFilter="@ViewData["SportFilter"]"
+                                   asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                                   asp-route-resultFilter="@ViewData["ResultFilter"]"
+                                   asp-route-pageSize="@ViewData["CurrentPageSize"]">Odds</a>
                             </th>
                             <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["OddsSortParm"]">Odds</a>
-                            </th>
-                            <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["ResultSortParm"]">Result</a>
+                                <a asp-action="Index" 
+                                   asp-route-sortOrder="@ViewData["ResultSortParm"]"
+                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                   asp-route-dateFilter="@ViewData["DateFilter"]"
+                                   asp-route-sportFilter="@ViewData["SportFilter"]"
+                                   asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                                   asp-route-resultFilter="@ViewData["ResultFilter"]"
+                                   asp-route-pageSize="@ViewData["CurrentPageSize"]">Result</a>
                             </th>
                             <th>
                                 <a asp-action="Index" asp-route-sortOrder="@ViewData["AmountSortParm"]">Amount</a>
@@ -283,19 +333,28 @@
                         <span>No bets found</span>
                     }
                 </div>
-                <div>
-                    <a asp-action="Index"
+                <div>                    <a asp-action="Index"
                        asp-route-sortOrder="@ViewData["CurrentSort"]"
                        asp-route-pageNumber="@(Model.PageIndex - 1)"
                        asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                       class="btn btn-outline-secondary @(Model.HasPreviousPage ? "" : "disabled")">
+                       asp-route-dateFilter="@ViewData["DateFilter"]"
+                       asp-route-sportFilter="@ViewData["SportFilter"]"
+                       asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                       asp-route-resultFilter="@ViewData["ResultFilter"]"
+                       asp-route-pageSize="@ViewData["CurrentPageSize"]"
+                       class="btn btn-outline-secondary @(!Model.HasPreviousPage ? "disabled" : "")">
                         Previous
                     </a>
                     <a asp-action="Index"
                        asp-route-sortOrder="@ViewData["CurrentSort"]"
                        asp-route-pageNumber="@(Model.PageIndex + 1)"
                        asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                       class="btn btn-outline-secondary @(Model.HasNextPage ? "" : "disabled")">
+                       asp-route-dateFilter="@ViewData["DateFilter"]"
+                       asp-route-sportFilter="@ViewData["SportFilter"]"
+                       asp-route-betTypeFilter="@ViewData["BetTypeFilter"]"
+                       asp-route-resultFilter="@ViewData["ResultFilter"]"
+                       asp-route-pageSize="@ViewData["CurrentPageSize"]"
+                       class="btn btn-outline-secondary @(!Model.HasNextPage ? "disabled" : "")">
                         Next
                     </a>
                 </div>
@@ -400,7 +459,20 @@
 
         // Handle bulk edit button click
         $('.bulk-edit').click(function() {
-            $('#bulkEditModal').modal('show');
+            $('#bulkEditModal').modal('show');        });
+
+        // Handle clear filters button click
+        $('#clearFilters').click(function() {
+            // Reset all filter inputs
+            $('select[name="dateFilter"]').val('');
+            $('select[name="sportFilter"]').val('');
+            $('select[name="betTypeFilter"]').val('');
+            $('select[name="resultFilter"]').val('');
+            $('input[name="searchString"]').val('');
+            $('select[name="pageSize"]').val('10');
+            
+            // Submit the form
+            $('#filterForm').submit();
         });
 
         // Handle bulk delete button click
