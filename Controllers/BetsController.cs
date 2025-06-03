@@ -452,21 +452,28 @@ namespace SportsBettingTracker.Controllers
                     }
                 }
             }
-            
-            ViewBag.Headers = headers;
+              ViewBag.Headers = headers;
             ViewBag.Rows = rows;
             ViewBag.SuggestedMappings = suggestedMappings;
             ViewBag.BetFields = new[] { "BetDate", "SportLeague", "BetType", "Match", "BetSelection", "Stake", "Odds", "Result", "AmountWonLost" };
             ViewBag.RequiredFields = new[] { "BetDate", "Match", "BetSelection", "Stake", "Odds" };
             ViewBag.CsvFilePath = csvFilePath;
             ViewBag.MissingFields = TempData["MissingFields"];
+            ViewBag.DateFormats = new[] { 
+                "MM/dd/yyyy", 
+                "dd/MM/yyyy",
+                "yyyy-MM-dd",
+                "MM-dd-yyyy",
+                "dd-MM-yyyy",
+                "MM/dd/yyyy HH:mm:ss",
+                "dd/MM/yyyy HH:mm:ss",
+                "yyyy-MM-dd HH:mm:ss"
+            };
             return View();
-        }
-
-        // POST: Bets/ImportCsvMapped
+        }        // POST: Bets/ImportCsvMapped
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ImportCsvMapped(string csvFilePath, string[] columnMap)
+        public async Task<IActionResult> ImportCsvMapped(string csvFilePath, string[] columnMap, string dateFormat)
         {
             if (string.IsNullOrWhiteSpace(csvFilePath) || !System.IO.File.Exists(csvFilePath) || columnMap == null || columnMap.Length == 0)
             {
@@ -574,14 +581,14 @@ namespace SportsBettingTracker.Controllers
                                 if (string.IsNullOrWhiteSpace(field)) continue;
                                 
                                 var value = cells[c]?.Trim() ?? string.Empty;
-                                
-                                switch (field)
+                                  switch (field)
                                 {
                                     case "BetDate":
-                                        if (DateTime.TryParse(value, out var dt)) 
+                                        if (DateTime.TryParseExact(value, dateFormat, System.Globalization.CultureInfo.InvariantCulture,
+                                            System.Globalization.DateTimeStyles.None, out var dt)) 
                                             bet.BetDate = dt;
                                         else
-                                            missingFieldsList.Add("BetDate");
+                                            missingFieldsList.Add($"BetDate (format: {dateFormat})");
                                         break;
                                     case "SportLeague":
                                         leagueName = value;

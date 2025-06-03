@@ -29,3 +29,6 @@ bld/
 *.db
 *.db-shm
 *.db-wal
+
+# Visual Studio Code settings
+.vs/*

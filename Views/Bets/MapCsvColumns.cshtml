@@ -15,12 +15,21 @@
             <strong>Missing required fields:</strong>
             <span class="text-danger">@string.Join(", ", missingFields)</span>
         </div>
-    }
-    <div class="alert alert-info">
-        <strong>Note:</strong> Fields in <strong>bold</strong> are required.
-    </div>
-    <form asp-action="ImportCsvMapped" method="post">
-        <table class="table table-bordered">
+    }        <div class="alert alert-info">
+            <strong>Note:</strong> Fields in <strong>bold</strong> are required.
+        </div>
+        <form asp-action="ImportCsvMapped" method="post">
+            <div class="form-group mb-3">
+                <label for="dateFormat" class="form-label">Date Format</label>
+                <select name="dateFormat" id="dateFormat" class="form-select">
+                    @foreach (var format in (string[])ViewBag.DateFormats)
+                    {
+                        <option value="@format">@format</option>
+                    }
+                </select>
+                <small class="form-text text-muted">Select the date format that matches your CSV file</small>
+            </div>
+            <table class="table table-bordered">
             <thead>
                 <tr>
                     @foreach (var header in headers)

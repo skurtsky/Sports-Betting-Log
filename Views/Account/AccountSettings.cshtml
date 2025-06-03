@@ -56,9 +56,22 @@
                             <input asp-for="ConfirmNewPassword" class="form-control" />
                             <span asp-validation-for="ConfirmNewPassword" class="text-danger"></span>
                         </div>
-                        
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                          <button type="submit" class="btn btn-primary">Save Changes</button>
                     </form>
+
+                    <hr class="my-4" />
+
+                    <h4 class="mb-3">Danger Zone</h4>
+                    <div class="card border-danger">
+                        <div class="card-body">
+                            <h5 class="card-title text-danger">Clear All Bets</h5>
+                            <p class="card-text">This will permanently delete all your betting history. This action cannot be undone.</p>
+                            <form asp-action="ClearBets" method="post" onsubmit="return confirm('Are you sure you want to delete all your bets? This action cannot be undone.');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger">Clear All Bets</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

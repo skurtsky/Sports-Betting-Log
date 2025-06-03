@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SportsBettingTracker.Data;
 using SportsBettingTracker.Models;
 using SportsBettingTracker.ViewModels;
 using System.Threading.Tasks;
@@ -12,15 +13,18 @@ namespace SportsBettingTracker.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<AccountController> _logger;
+        private readonly ApplicationDbContext _context;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger,
+            ApplicationDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet]
@@ -218,6 +222,28 @@ namespace SportsBettingTracker.Controllers
             await _signInManager.RefreshSignInAsync(user);
             
             TempData["StatusMessage"] = "Your account has been updated";
+            return RedirectToAction(nameof(AccountSettings));
+        }
+
+        // POST: Account/ClearBets
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ClearBets()
+        {
+            // Get current user
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            // Remove all bets for this user
+            var bets = _context.Bets.Where(b => b.UserId == user.Id);
+            _context.Bets.RemoveRange(bets);
+            await _context.SaveChangesAsync();
+
+            TempData["StatusMessage"] = "All your bets have been cleared";
             return RedirectToAction(nameof(AccountSettings));
         }
 
