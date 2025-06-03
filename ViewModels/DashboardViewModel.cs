@@ -1,4 +1,5 @@
 using SportsBettingTracker.Models;
+using System.Collections.Generic;
 
 namespace SportsBettingTracker.ViewModels
 {
@@ -9,6 +10,7 @@ namespace SportsBettingTracker.ViewModels
         public DateTime EndDate { get; set; }
         public int TotalBets { get; set; }
         public int TotalWins { get; set; }
+        public List<BetRecommendationViewModel> TopRecommendations { get; set; } = new List<BetRecommendationViewModel>();
         public int TotalLosses { get; set; }
         public int TotalPushes { get; set; }
         public decimal NetProfit { get; set; }

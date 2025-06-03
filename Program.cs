@@ -49,6 +49,9 @@ builder.Services.ConfigureApplicationCookie(options => {
 // Add Demo User Cleanup Service
 builder.Services.AddHostedService<SportsBettingTracker.Services.DemoUserCleanupService>();
 
+// Register Bet Recommendation Services
+builder.Services.AddScoped<SportsBettingTracker.Services.BetRecommendationService>();
+
 var app = builder.Build();
 
 // Apply migrations at startup

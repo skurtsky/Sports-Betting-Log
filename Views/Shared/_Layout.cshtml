@@ -23,10 +23,14 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Dashboard" asp-action="Index">
                                 <i class="bi bi-graph-up"></i> Dashboard
                             </a>
-                        </li>
-                        <li class="nav-item">
+                        </li>                        <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Bets" asp-action="Index">
                                 <i class="bi bi-table"></i> Bets
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Recommendations" asp-action="Index">
+                                <i class="bi bi-lightbulb"></i> Recommendations
                             </a>
                         </li>                        <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Settings">
@@ -61,6 +65,7 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/bets.js" asp-append-version="true"></script>
+    <script src="~/js/recommendations.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

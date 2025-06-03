@@ -1,0 +1,116 @@
+@model BetCalculatorViewModel
+@{
+    ViewData["Title"] = "Kelly Criterion Calculator";
+}
+
+<div class="container">
+    <h1 class="mb-4">
+        <i class="bi bi-calculator"></i> Kelly Criterion Calculator
+    </h1>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">What is the Kelly Criterion?</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        The Kelly Criterion is a formula used to determine the optimal size of a series of bets 
+                        to maximize the growth rate of your bankroll over time.
+                    </p>
+                    <p>
+                        It takes into account:
+                    </p>
+                    <ul>
+                        <li>Your current bankroll</li>
+                        <li>The probability of winning the bet</li>
+                        <li>The odds you're receiving</li>
+                    </ul>
+                    <p class="mb-0">
+                        <strong>Note:</strong> The calculated bet size typically represents the maximum theoretical bet. 
+                        Many bettors use a "fractional Kelly" approach (e.g., half Kelly) for more conservative bet sizing.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Calculator</h5>
+                </div>
+                <div class="card-body">                    <form asp-action="Calculator" method="post" id="kellyCalculatorForm">
+                        <div class="form-group mb-3">
+                            <label asp-for="CurrentBankroll" class="form-label">Current Bankroll ($)</label>
+                            <input asp-for="CurrentBankroll" class="form-control" min="1" required />
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="EstimatedWinPercentage" class="form-label">Estimated Win Percentage (%)</label>
+                            <input asp-for="EstimatedWinPercentage" class="form-control" min="1" max="99" required />
+                            <small class="form-text text-muted">
+                                Your estimated probability of winning this bet (1-99%)
+                            </small>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="AmericanOdds" class="form-label">American Odds (optional)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-arrow-left-right"></i>
+                                        </span>
+                                        <input id="AmericanOdds" class="form-control" type="number" placeholder="+100 or -110" />
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Enter American odds to convert to decimal
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="DecimalOdds" class="form-label">Decimal Odds</label>
+                                    <input asp-for="DecimalOdds" class="form-control" min="1.01" step="0.01" required />
+                                    <small class="form-text text-muted">
+                                        Example: 2.00, 1.91, 1.50
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="kellyPreview" style="display: none;">
+                            <!-- Live preview will appear here via JavaScript -->
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-calculator"></i> Calculate Optimal Bet Size
+                        </button>
+                    </form>
+                    
+                    @if (Model.CalculationComplete)
+                    {
+                        <hr />
+                        <div class="alert alert-success">
+                            <h5><i class="bi bi-check-circle"></i> Results</h5>
+                            <p>
+                                <strong>Recommended Bet Amount:</strong> $@Model.RecommendedBetAmount.ToString("F2")
+                            </p>
+                            <p>
+                                <strong>% of Bankroll:</strong> @((Model.RecommendedBetAmount / Model.CurrentBankroll * 100).ToString("F1"))%
+                            </p>
+                        </div>
+                        <div class="alert alert-warning">
+                            <p class="mb-0">
+                                <strong>Note:</strong> Consider using a "Half-Kelly" approach 
+                                ($@((Model.RecommendedBetAmount / 2).ToString("F2"))) 
+                                for more conservative bankroll management.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

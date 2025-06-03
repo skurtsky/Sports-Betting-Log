@@ -2,22 +2,28 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SportsBettingTracker.Data;
 using SportsBettingTracker.Models;
+using SportsBettingTracker.Services;
 using SportsBettingTracker.ViewModels;
+using System.Linq;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace SportsBettingTracker.Controllers
-{
-    [Microsoft.AspNetCore.Authorization.Authorize]
+{    [Microsoft.AspNetCore.Authorization.Authorize]
     public class DashboardController : Controller
     {        private readonly ApplicationDbContext _context;
         private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> _userManager;
+        private readonly SportsBettingTracker.Services.BetRecommendationService _recommendationService;
 
-        public DashboardController(ApplicationDbContext context, Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager)
+        public DashboardController(
+            ApplicationDbContext context, 
+            Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager,
+            SportsBettingTracker.Services.BetRecommendationService recommendationService)
         {
             _context = context;
             _userManager = userManager;
+            _recommendationService = recommendationService;
         }
 
         // GET: Dashboard
@@ -106,8 +112,24 @@ namespace SportsBettingTracker.Controllers
             // Calculate cumulative profit data
             var cumulativeProfit = CalculateCumulativeProfit(chartData
                 .Select(d => d.Profit)
-                .ToList());
-                
+                .ToList());                  // Get recommendations if the user has enough bet history
+            List<BetRecommendationViewModel> recommendations = new List<BetRecommendationViewModel>();
+            if (userId != null && bets.Count >= 10)
+            {
+                var serviceRecommendations = await _recommendationService.GetRecommendationsAsync(userId, 2);
+                recommendations = serviceRecommendations.Select(r => new BetRecommendationViewModel
+                {
+                    Type = (RecommendationTypeViewModel)r.Type,
+                    SportLeagueId = r.SportLeagueId,
+                    SportLeagueName = r.SportLeagueName,
+                    BetTypeName = r.BetTypeName,
+                    TeamName = r.TeamName,
+                    Confidence = r.Confidence,
+                    Reasoning = r.Reasoning,
+                    SuggestedAction = r.SuggestedAction
+                }).ToList();
+            }
+            
             var viewModel = new DashboardViewModel
             {
                 DateRange = dateRange,
@@ -132,7 +154,8 @@ namespace SportsBettingTracker.Controllers
                 ProfitByBetType = profitByBetType,
                 ChartLabels = chartData.Select(d => d.Date).ToList(),
                 ChartData = chartData.Select(d => d.Profit).ToList(),
-                CumulativeChartData = cumulativeProfit
+                CumulativeChartData = cumulativeProfit,
+                TopRecommendations = recommendations
             };
 
             return View(viewModel);

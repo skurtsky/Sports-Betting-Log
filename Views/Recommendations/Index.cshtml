@@ -1,0 +1,107 @@
+@model List<BetRecommendationViewModel>
+@{
+    ViewData["Title"] = "Bet Recommendations";
+}
+
+<div class="container">
+    <h1 class="mb-4">
+        <i class="bi bi-lightbulb"></i> Bet Recommendations
+    </h1>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> About Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        These recommendations are based on your betting history. The system analyzes your past bets 
+                        to identify patterns where you've been successful. As you track more bets, the recommendations 
+                        will become more accurate.
+                    </p>
+                    <p class="mb-0">
+                        <strong>Note:</strong> These recommendations are for informational purposes only and 
+                        are based on your historical data. Always bet responsibly.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <h5><i class="bi bi-exclamation-circle"></i> Not enough data yet</h5>
+            <p>
+                You need at least 10 completed bets before we can generate personalized recommendations.
+                Keep tracking your bets, and recommendations will appear here once we have enough data.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="row mb-4">
+            <div class="col-md-8">
+                @foreach (var recommendation in Model)
+                {
+                    <div class="card mb-3">
+                        <div class="card-body">                            <h5 class="card-title">
+                                @{
+                                    switch (recommendation.Type)
+                                    {
+                                        case RecommendationTypeViewModel.SportLeague:
+                                            <text><i class="bi bi-trophy"></i> @recommendation.SportLeagueName Recommendation</text>
+                                            break;
+                                        case RecommendationTypeViewModel.BetType:
+                                            <text><i class="bi bi-diagram-3"></i> @recommendation.BetTypeName Recommendation</text>
+                                            break;
+                                        case RecommendationTypeViewModel.Team:
+                                            <text><i class="bi bi-people"></i> Team Recommendation: @recommendation.TeamName</text>
+                                            break;
+                                        case RecommendationTypeViewModel.BetSize:
+                                            <text><i class="bi bi-cash"></i> Bet Size Recommendation</text>
+                                            break;
+                                    }
+                                }
+                            </h5>
+                            
+                            <div class="progress mb-3">
+                                <div class="progress-bar bg-success" 
+                                     role="progressbar" 
+                                     style="width: @(recommendation.Confidence * 100)%;" 
+                                     aria-valuenow="@(recommendation.Confidence * 100)" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    Confidence: @((recommendation.Confidence * 100).ToString("F0"))%
+                                </div>
+                            </div>
+                            
+                            <p class="card-text"><strong>Analysis:</strong> @recommendation.Reasoning</p>
+                            <p class="card-text"><strong>Suggestion:</strong> @recommendation.SuggestedAction</p>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calculator"></i> Bet Size Calculator
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Need help determining the optimal bet size?</p>
+                        <p>Our Kelly Criterion calculator helps you maximize your bankroll growth by calculating the optimal bet size based on your edge.</p>
+                        <a asp-action="Calculator" class="btn btn-primary">
+                            <i class="bi bi-calculator"></i> Bet Size Calculator
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
