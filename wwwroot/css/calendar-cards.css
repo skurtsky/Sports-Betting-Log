@@ -1,0 +1,83 @@
+.stat-card {
+    transition: transform 0.2s ease;
+    cursor: default;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card .card-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.stat-card .card-text {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.stat-card .card-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* Calendar specific styles */
+.calendar-day {
+    transition: background-color 0.2s ease;
+}
+
+.calendar-day.has-bets {
+    cursor: pointer;
+}
+
+.calendar-day.has-bets:hover {
+    background-color: #f8f9fa;
+}
+
+.bet-item {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.bet-item:hover {
+    transform: translateX(5px);
+}
+
+/* Custom scrollbar for day-bets */
+.day-bets {
+    scrollbar-width: thin;
+    scrollbar-color: #6c757d #f8f9fa;
+}
+
+.day-bets::-webkit-scrollbar {
+    width: 6px;
+}
+
+.day-bets::-webkit-scrollbar-track {
+    background: #f8f9fa;
+}
+
+.day-bets::-webkit-scrollbar-thumb {
+    background-color: #6c757d;
+    border-radius: 3px;
+}
+
+/* More bets indicator */
+.more-bets {
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.more-bets:hover {
+    background-color: #ced4da;
+}
+
+/* Calendar navigation */
+.calendar-nav {
+    transition: opacity 0.2s ease;
+}
+
+.calendar-nav:hover {
+    opacity: 0.9;
+}

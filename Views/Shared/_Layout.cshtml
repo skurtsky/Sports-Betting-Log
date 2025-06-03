@@ -6,7 +6,9 @@
     <script type="importmap"></script>    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/custom.css" asp-append-version="true" />    <link rel="stylesheet" href="~/SportsBettingTracker.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/custom.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/SportsBettingTracker.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <header>
@@ -26,6 +28,11 @@
                         </li>                        <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Bets" asp-action="Index">
                                 <i class="bi bi-table"></i> Bets
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Calendar" asp-action="Index">
+                                <i class="bi bi-calendar3"></i> Calendar
                             </a>
                         </li>
                         <li class="nav-item">
@@ -66,6 +73,7 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/bets.js" asp-append-version="true"></script>
     <script src="~/js/recommendations.js" asp-append-version="true"></script>
+    <script src="~/js/calendar.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

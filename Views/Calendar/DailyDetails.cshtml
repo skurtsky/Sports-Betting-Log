@@ -1,0 +1,99 @@
+@model List<SportsBettingTracker.ViewModels.CalendarBetViewModel>
+@{
+    ViewData["Title"] = "Daily Bets - " + ViewBag.Date.ToString("MMMM d, yyyy");
+    var dailyProfit = Model.Sum(b => b.AmountWonLost ?? 0);
+    var totalStake = Model.Sum(b => b.Stake);
+    var roi = totalStake > 0 ? (dailyProfit / totalStake) * 100 : 0;
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@ViewBag.Date.ToString("MMMM d, yyyy")</h1>
+        <a href="@Url.Action("Index", new { year = ViewBag.Date.Year, month = ViewBag.Date.Month })" class="btn btn-outline-secondary">
+            <i class="bi bi-calendar3"></i> Back to Calendar
+        </a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Total Bets</h5>
+                    <p class="card-text fs-2">@Model.Count</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card @(dailyProfit >= 0 ? "bg-success" : "bg-danger") text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Daily Profit/Loss</h5>
+                    <p class="card-text fs-2">@dailyProfit.ToString("C")</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Stake</h5>
+                    <p class="card-text fs-2">@totalStake.ToString("C")</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card @(roi >= 0 ? "bg-success" : "bg-danger") text-white">
+                <div class="card-body">
+                    <h5 class="card-title">ROI</h5>
+                    <p class="card-text fs-2">@roi.ToString("0.00")%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Bets</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sport/League</th>
+                            <th>Match</th>
+                            <th>Selection</th>
+                            <th>Stake</th>
+                            <th>Result</th>
+                            <th>Profit/Loss</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var bet in Model)
+                        {
+                            <tr>
+                                <td>@bet.SportLeagueName</td>
+                                <td>@bet.Match</td>
+                                <td>@bet.BetSelection</td>
+                                <td>@bet.Stake.ToString("C")</td>
+                                <td>
+                                    <span class="badge @(bet.Result == BetResult.WIN ? "bg-success" : 
+                                                        bet.Result == BetResult.LOSS ? "bg-danger" : 
+                                                        bet.Result == BetResult.PUSH ? "bg-secondary" : "bg-warning")">
+                                        @bet.Result
+                                    </span>
+                                </td>
+                                <td class="@(bet.AmountWonLost >= 0 ? "text-success" : "text-danger")">@bet.FormattedAmountWonLost</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("Edit", "Bets", new { id = bet.Id })" class="btn btn-outline-primary">Edit</a>
+                                        <a href="@Url.Action("Details", "Bets", new { id = bet.Id })" class="btn btn-outline-secondary">Details</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

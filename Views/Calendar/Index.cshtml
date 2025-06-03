@@ -1,0 +1,139 @@
+@model SportsBettingTracker.ViewModels.CalendarViewModel
+@{
+    ViewData["Title"] = "Betting Calendar";
+    var firstDayOfMonth = new DateTime(Model.CurrentMonth.Year, Model.CurrentMonth.Month, 1);
+    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+    var dayOfWeek = (int)firstDayOfMonth.DayOfWeek;
+    var numberOfDays = DateTime.DaysInMonth(Model.CurrentMonth.Year, Model.CurrentMonth.Month);
+}
+
+<div class="container">
+    <h1>Betting Calendar</h1>
+      <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-light stat-card">
+                <div class="card-body text-center">                    <h5 class="card-title mb-3">Total Bets</h5>
+                    <p class="card-text mb-1" id="totalBets">@Model.TotalMonthBets</p>
+                    <p class="card-subtitle text-muted">Placed this month</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card @(Model.TotalMonthProfit >= 0 ? "bg-success" : "bg-danger") text-white stat-card profit-card">
+                <div class="card-body text-center">                    <h5 class="card-title mb-3">Monthly Profit/Loss</h5>
+                    <p class="card-text mb-1" id="monthlyProfit">@Model.FormattedMonthProfit</p>
+                    <p class="card-subtitle">Overall performance</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white stat-card">
+                <div class="card-body text-center">                    <h5 class="card-title mb-3">Winning vs Losing Days</h5>
+                    <p class="card-text mb-1" id="winLossDays">@Model.WinningDays W - @Model.LosingDays L</p>
+                    <p class="card-subtitle">Daily performance</p>
+                </div>
+            </div>
+        </div>
+    </div><div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+            <div>
+                <a href="@Url.Action("Index", new { year = Model.PreviousMonth.Year, month = Model.PreviousMonth.Month })" class="btn btn-outline-light">
+                    <i class="bi bi-chevron-left"></i> Previous
+                </a>
+                <button id="goToToday" class="btn btn-light ms-2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Go to current month">
+                    Today
+                </button>
+            </div>
+            <h2 class="mb-0">@Model.MonthName</h2>
+            <a href="@Url.Action("Index", new { year = Model.NextMonth.Year, month = Model.NextMonth.Month })" class="btn btn-outline-light">
+                Next <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered calendar-table">
+                    <thead>
+                        <tr>
+                            <th>Sunday</th>
+                            <th>Monday</th>
+                            <th>Tuesday</th>
+                            <th>Wednesday</th>
+                            <th>Thursday</th>
+                            <th>Friday</th>
+                            <th>Saturday</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int day = 1;
+                            for (int i = 0; i < 6; i++)
+                            {
+                                <tr class="calendar-row">
+                                    @for (int j = 0; j < 7; j++)
+                                    {
+                                        if ((i == 0 && j < dayOfWeek) || day > numberOfDays)
+                                        {
+                                            <td class="calendar-day empty"></td>
+                                        }
+                                        else
+                                        {
+                                            var currentDate = new DateTime(Model.CurrentMonth.Year, Model.CurrentMonth.Month, day);
+                                            var betsForDay = Model.BetsByDate.ContainsKey(currentDate) ? Model.BetsByDate[currentDate] : new List<SportsBettingTracker.ViewModels.CalendarBetViewModel>();
+                                            var dailyProfit = betsForDay.Sum(b => b.AmountWonLost ?? 0);
+                                            var dayClass = currentDate == DateTime.Today ? "today" : "";
+                                            var profitClass = dailyProfit > 0 ? "profit" : (dailyProfit < 0 ? "loss" : "");
+                                              <td class="calendar-day @dayClass">
+                                                <div class="day-header d-flex justify-content-between">
+                                                    <a href="@Url.Action("DailyDetails", new { year = Model.CurrentMonth.Year, month = Model.CurrentMonth.Month, day = day })" 
+                                                       class="day-number @(betsForDay.Any() ? "has-bets" : "")">@day</a>
+                                                    @if (betsForDay.Any())
+                                                    {
+                                                        <span class="badge rounded-pill @(dailyProfit >= 0 ? "bg-success" : "bg-danger")">
+                                                            @dailyProfit.ToString("C")
+                                                        </span>
+                                                    }
+                                                </div>
+                                                @if (betsForDay.Any())
+                                                {
+                                                    <div class="day-bets">
+                                                        @foreach (var bet in betsForDay.Take(3))
+                                                        {                                            <a href="@Url.Action("Details", "Bets", new { id = bet.Id })" 
+                                               class="bet-item @bet.ResultClass"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="top"
+                                               title="@bet.Match - @bet.BetSelection">
+                                                <span class="bet-league">@bet.SportLeagueName</span>
+                                                <span class="bet-selection">@bet.BetSelection</span>
+                                                <span class="bet-result">@bet.FormattedAmountWonLost</span>
+                                            </a>
+                                                        }
+                                                        @if (betsForDay.Count > 3)
+                                                        {
+                                                            <div class="more-bets">
+                                                                +@(betsForDay.Count - 3) more
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </td>
+                                            day++;
+                                        }
+                                    }
+                                </tr>
+                                if (day > numberOfDays)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/calendar.css" />
+    <link rel="stylesheet" href="~/css/calendar-cards.css" />
+}
