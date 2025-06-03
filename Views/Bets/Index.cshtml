@@ -18,14 +18,85 @@
             </div>
             <div class="btn-group">
                 <a asp-action="ExportCsv" class="btn btn-outline-secondary">Export</a>
-                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="visually-hidden">Toggle Dropdown</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" asp-action="ExportCsv">Export as CSV</a></li>
-                    <li><a class="dropdown-item disabled" href="#">Export as PDF</a></li>
-                </ul>
             </div>
+        </div>    </div>
+
+    <!-- Bulk Action Buttons -->
+    <div class="bulk-actions mb-3 d-none">
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary bulk-edit">Edit Selected</button>
+            <button type="button" class="btn btn-outline-danger bulk-delete">Delete Selected</button>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            <form method="get" id="filterForm" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Date Range</label>
+                    <select name="dateFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Time</option>
+                        <option value="today" selected="@(ViewData["DateFilter"]?.ToString() == "today")">Today</option>
+                        <option value="yesterday" selected="@(ViewData["DateFilter"]?.ToString() == "yesterday")">Yesterday</option>
+                        <option value="last7days" selected="@(ViewData["DateFilter"]?.ToString() == "last7days")">Last 7 Days</option>
+                        <option value="last30days" selected="@(ViewData["DateFilter"]?.ToString() == "last30days")">Last 30 Days</option>
+                        <option value="thismonth" selected="@(ViewData["DateFilter"]?.ToString() == "thismonth")">This Month</option>
+                        <option value="lastmonth" selected="@(ViewData["DateFilter"]?.ToString() == "lastmonth")">Last Month</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Sport/League</label>
+                    <select name="sportFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        @foreach (var league in ViewBag.SportLeagues)
+                        {
+                            <option value="@league.Id" selected="@(ViewData["SportFilter"]?.ToString() == league.Id.ToString())">
+                                @league.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Bet Type</label>
+                    <select name="betTypeFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        @foreach (var betType in Enum.GetValues(typeof(SportsBettingTracker.Models.BetType)))
+                        {
+                            <option value="@betType" selected="@(ViewData["BetTypeFilter"]?.ToString() == betType.ToString())">
+                                @betType
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Result</label>
+                    <select name="resultFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        @foreach (var result in Enum.GetValues(typeof(SportsBettingTracker.Models.BetResult)))
+                        {
+                            <option value="@result" selected="@(ViewData["ResultFilter"]?.ToString() == result.ToString())">
+                                @result
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Search...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Page Size</label>
+                    <select name="pageSize" class="form-select" onchange="this.form.submit()">
+                        @foreach (var size in (int[])ViewData["PageSizeOptions"])
+                        {
+                            <option value="@size" selected="@(ViewData["CurrentPageSize"]?.ToString() == size.ToString())">
+                                @size items
+                            </option>
+                        }
+                    </select>
+                </div>
+                <input type="hidden" name="sortOrder" value="@ViewData["CurrentSort"]" />
+            </form>
         </div>
     </div>
 
@@ -92,15 +163,28 @@
                     <thead>
                         <tr>
                             <th>
+                                <div class="form-check">
+                                    <input class="form-check-input select-all" type="checkbox">
+                                </div>
+                            </th>
+                            <th>
                                 <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]">Date</a>
                             </th>
                             <th>
                                 <a asp-action="Index" asp-route-sortOrder="@ViewData["SportSortParm"]">Sport/League</a>
                             </th>
-                            <th>Match</th>
-                            <th>Selection</th>
-                            <th>Stake</th>
-                            <th>Odds</th>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["MatchSortParm"]">Match</a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["SelectionSortParm"]">Selection</a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["StakeSortParm"]">Stake</a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["OddsSortParm"]">Odds</a>
+                            </th>
                             <th>
                                 <a asp-action="Index" asp-route-sortOrder="@ViewData["ResultSortParm"]">Result</a>
                             </th>
@@ -109,10 +193,16 @@
                             </th>
                             <th>Actions</th>
                         </tr>
-                    </thead>                    <tbody>
+                    </thead>
+                    <tbody>
                         @foreach (var item in Model)
                         {
-                            <tr data-bet-id="@item.Id">                                <td class="editable" data-field="BetDate" data-type="date">
+                            <tr data-bet-id="@item.Id">                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input select-bet" type="checkbox" value="@item.Id">
+                                    </div>
+                                </td>
+                                <td class="editable" data-field="BetDate" data-type="date">
                                     <span class="display-value">@item.BetDate.ToShortDateString()</span>
                                     <input type="date" class="form-control edit-control d-none" value="@item.BetDate.ToString("yyyy-MM-dd")" />
                                 </td>
@@ -153,41 +243,18 @@
                                                       item.Result == SportsBettingTracker.Models.BetResult.LOSS ? "bg-danger" :
                                                       item.Result == SportsBettingTracker.Models.BetResult.PUSH ? "bg-secondary" : "bg-warning") display-value">
                                         @item.Result
-                                    </span>                                    <select class="form-control edit-control d-none">
-                                        @if (item.Result == SportsBettingTracker.Models.BetResult.WIN)
+                                    </span>
+                                    <select class="form-control edit-control d-none">
+                                        @foreach (var result in Enum.GetValues(typeof(SportsBettingTracker.Models.BetResult)))
                                         {
-                                            <option value="WIN" selected>WIN</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="WIN">WIN</option>
-                                        }
-                                        
-                                        @if (item.Result == SportsBettingTracker.Models.BetResult.LOSS)
-                                        {
-                                            <option value="LOSS" selected>LOSS</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="LOSS">LOSS</option>
-                                        }
-                                        
-                                        @if (item.Result == SportsBettingTracker.Models.BetResult.PUSH)
-                                        {
-                                            <option value="PUSH" selected>PUSH</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="PUSH">PUSH</option>
-                                        }
-                                        
-                                        @if (item.Result == SportsBettingTracker.Models.BetResult.PENDING)
-                                        {
-                                            <option value="PENDING" selected>PENDING</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="PENDING">PENDING</option>
+                                            if (item.Result.ToString() == result.ToString())
+                                            {
+                                                <option value="@result" selected>@result</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@result">@result</option>
+                                            }
                                         }
                                     </select>
                                 </td>
@@ -236,135 +303,164 @@
     </div>
 </div>
 
+<!-- Bulk Edit Modal -->
+<div class="modal fade" id="bulkEditModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Edit Bets</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkEditForm">
+                    <div class="mb-3">
+                        <label class="form-label">Result</label>
+                        <select class="form-select" name="Result">
+                            <option value="">No Change</option>
+                            @foreach (var result in Enum.GetValues(typeof(SportsBettingTracker.Models.BetResult)))
+                            {
+                                <option value="@result">@result</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sport/League</label>
+                        <select class="form-select" name="SportLeagueId">
+                            <option value="">No Change</option>
+                            @foreach (var league in ViewBag.SportLeagues)
+                            {
+                                <option value="@league.Id">@league.Name</option>
+                            }
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="bulkEditConfirm">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Delete Confirmation Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the selected bets? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="bulkDeleteConfirm">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        $(document).ready(function() {
-            // Handle double-click on editable cells
-            $('.editable').dblclick(function() {
-                // Check if another cell is already being edited
-                if ($('.edit-mode').length > 0) {
-                    // If so, cancel that edit first
-                    cancelEdit();
-                }
-                
-                // Enter edit mode for this cell
-                $(this).addClass('edit-mode');
-                $(this).find('.display-value').addClass('d-none');
-                const editControl = $(this).find('.edit-control');
-                editControl.removeClass('d-none').focus();
+    $(document).ready(function() {
+        // Handle "Select All" checkbox
+        $('.select-all').change(function() {
+            $('.select-bet').prop('checked', $(this).prop('checked'));
+            updateBulkActionsVisibility();
+        });
 
-                // Handle specific control types
-                if (editControl.is('select')) {
-                    // Show 4 options at once for dropdowns
-                    editControl.attr('size', '4');
-                } else if (editControl.is('input[type="date"]')) {
-                    // Automatically open the date picker
-                    editControl[0].showPicker();
-                }
-            });
-            
-            // Handle Enter key press to save
-            $('.edit-control').on('keyup', function(e) {
-                if (e.key === 'Enter') {
-                    saveEdit($(this).closest('.editable'));
-                } else if (e.key === 'Escape') {
-                    cancelEdit();
-                }
-            });
-            
-            // Handle click outside to save
-            $(document).on('click', function(e) {
-                if (!$(e.target).closest('.edit-mode').length && $('.edit-mode').length > 0) {
-                    saveEdit($('.edit-mode'));
-                }
-            });
-            
-            // Handle select control change
-            $('select.edit-control').on('change', function() {
-                // Reset the size attribute after selection
-                $(this).removeAttr('size');
-                saveEdit($(this).closest('.editable'));
-            });
-            
-            // Handle date control change
-            $('input[type="date"].edit-control').on('change', function() {
-                saveEdit($(this).closest('.editable'));
-            });
-            
-            // Reset dropdown size when clicking outside
-            $(document).on('click', function(e) {
-                if (!$(e.target).is('select.edit-control')) {
-                    $('select.edit-control').removeAttr('size');
-                }
-            });
-            
-            function saveEdit(cell) {
-                const betId = cell.closest('tr').data('bet-id');
-                const field = cell.data('field');
-                const editControl = cell.find('.edit-control');
-                const value = editControl.val();
-                const displayValue = cell.find('.display-value');
-                const originalValue = displayValue.text();
-                
-                // Show loading state
-                displayValue.html('<i class="spinner-border spinner-border-sm" role="status"></i>');
-                
-                // Send AJAX request to save changes
-                $.ajax({
-                    url: '@Url.Action("QuickEdit")',
-                    type: 'POST',
-                    data: {
-                        id: betId,
-                        field: field,
-                        value: value,
-                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            // Update the displayed value with formatted value
-                            if (field === 'Result') {
-                                displayValue.text(response.formattedValue);
-                                // Update the badge class
-                                displayValue.removeClass('bg-success bg-danger bg-warning bg-secondary')
-                                           .addClass(response.resultClass);
-                            } else {
-                                displayValue.text(response.formattedValue);
-                            }
-                            
-                            // Update the Amount Won/Lost column if necessary
-                            if (['BetDate', 'Stake', 'Odds', 'Result'].includes(field)) {
-                                cell.closest('tr').find('.amount-won-lost').text(response.amountWonLost);
-                            }
-                        } else {
-                            // Show error and revert to original value
-                            alert(response.message);
-                            displayValue.text(originalValue);
-                        }
-                    },
-                    error: function() {
-                        alert('An error occurred while saving changes.');
-                        displayValue.text(originalValue);
-                    },
-                    complete: function() {
-                        exitEditMode(cell);
-                    }
-                });
-            }
-            
-            function cancelEdit() {
-                // Reset dropdown size when canceling edit
-                $('.edit-control').removeAttr('size');
-                exitEditMode($('.edit-mode'));
-            }
-            
-            function exitEditMode(cell) {
-                cell.removeClass('edit-mode');
-                cell.find('.display-value').removeClass('d-none');
-                const editControl = cell.find('.edit-control');
-                editControl.addClass('d-none');
-                // Reset dropdown size when exiting edit mode
-                editControl.removeAttr('size');
+        // Handle individual checkboxes
+        $('.select-bet').change(function() {
+            updateBulkActionsVisibility();
+            // If not all checkboxes are checked, uncheck "Select All"
+            if (!$(this).prop('checked')) {
+                $('.select-all').prop('checked', false);
             }
         });
+
+        // Show/hide bulk actions based on selection
+        function updateBulkActionsVisibility() {
+            if ($('.select-bet:checked').length > 0) {
+                $('.bulk-actions').removeClass('d-none');
+            } else {
+                $('.bulk-actions').addClass('d-none');
+            }
+        }
+
+        // Handle bulk edit button click
+        $('.bulk-edit').click(function() {
+            $('#bulkEditModal').modal('show');
+        });
+
+        // Handle bulk delete button click
+        $('.bulk-delete').click(function() {
+            $('#bulkDeleteModal').modal('show');
+        });
+
+        // Handle bulk edit confirmation
+        $('#bulkEditConfirm').click(function() {
+            var selectedIds = $('.select-bet:checked').map(function() {
+                return parseInt($(this).val());
+            }).get();
+
+            var formData = {
+                ids: selectedIds,
+                result: $('#bulkEditForm select[name="Result"]').val(),
+                sportLeagueId: $('#bulkEditForm select[name="SportLeagueId"]').val()
+            };
+
+            $.ajax({
+                url: '@Url.Action("BulkEdit")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('An error occurred while processing your request.');
+                }
+            });
+        });
+
+        // Handle bulk delete confirmation
+        $('#bulkDeleteConfirm').click(function() {
+            var selectedIds = $('.select-bet:checked').map(function() {
+                return parseInt($(this).val());
+            }).get();
+
+            $.ajax({
+                url: '@Url.Action("BulkDelete")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(selectedIds),
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('An error occurred while processing your request.');
+                }
+            });
+        });
+
+        // Initialize tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+    });
     </script>
 }

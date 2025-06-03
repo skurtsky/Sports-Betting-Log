@@ -23,14 +23,32 @@ namespace SportsBettingTracker.Controllers
         {
             _context = context;
             _userManager = userManager;
-        }// GET: Bets
-        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
+        }        // GET: Bets
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber, int? pageSize, string? dateFilter, string? sportFilter, string? betTypeFilter, string? resultFilter)
         {
             ViewData["CurrentSort"] = sortOrder;
+            // Sort parameters
             ViewData["DateSortParm"] = string.IsNullOrEmpty(sortOrder) ? "date_desc" : "";
             ViewData["SportSortParm"] = sortOrder == "Sport" ? "sport_desc" : "Sport";
+            ViewData["BetTypeSortParm"] = sortOrder == "BetType" ? "bettype_desc" : "BetType";
+            ViewData["MatchSortParm"] = sortOrder == "Match" ? "match_desc" : "Match";
+            ViewData["SelectionSortParm"] = sortOrder == "Selection" ? "selection_desc" : "Selection";
+            ViewData["StakeSortParm"] = sortOrder == "Stake" ? "stake_desc" : "Stake";
+            ViewData["OddsSortParm"] = sortOrder == "Odds" ? "odds_desc" : "Odds";
             ViewData["ResultSortParm"] = sortOrder == "Result" ? "result_desc" : "Result";
             ViewData["AmountSortParm"] = sortOrder == "Amount" ? "amount_desc" : "Amount";
+
+            // Filter values
+            ViewData["CurrentFilter"] = searchString;
+            ViewData["DateFilter"] = dateFilter;
+            ViewData["SportFilter"] = sportFilter;
+            ViewData["BetTypeFilter"] = betTypeFilter;
+            ViewData["ResultFilter"] = resultFilter;
+
+            // Page size options
+            var pageSizeOptions = new[] { 10, 25, 50, 75, 100 };
+            ViewData["PageSizeOptions"] = pageSizeOptions;
+            ViewData["CurrentPageSize"] = pageSize ?? 10;
 
             if (searchString != null)
             {
@@ -54,29 +72,76 @@ namespace SportsBettingTracker.Controllers
             if (userId != null)
             {
                 betsQuery = betsQuery.Where(b => b.UserId == userId);
-            }
+            }            var bets = betsQuery;
 
-            var bets = betsQuery;
-
+            // Apply filters
             if (!string.IsNullOrEmpty(searchString))
-            {                bets = bets.Where(b => 
+            {
+                bets = bets.Where(b => 
                     b.Match.Contains(searchString) ||
                     b.BetSelection.Contains(searchString) ||
                     (b.SportLeague != null && b.SportLeague.Name.Contains(searchString)));
-            }            bets = sortOrder switch
+            }
+
+            if (!string.IsNullOrEmpty(dateFilter))
+            {
+                var today = DateTime.Today;
+                bets = dateFilter switch
+                {
+                    "today" => bets.Where(b => b.BetDate.Date == today),
+                    "yesterday" => bets.Where(b => b.BetDate.Date == today.AddDays(-1)),
+                    "last7days" => bets.Where(b => b.BetDate.Date >= today.AddDays(-7)),
+                    "last30days" => bets.Where(b => b.BetDate.Date >= today.AddDays(-30)),
+                    "thismonth" => bets.Where(b => b.BetDate.Month == today.Month && b.BetDate.Year == today.Year),
+                    "lastmonth" => bets.Where(b => b.BetDate.Month == today.AddMonths(-1).Month && b.BetDate.Year == today.AddMonths(-1).Year),
+                    _ => bets
+                };
+            }
+
+            if (!string.IsNullOrEmpty(sportFilter))
+            {
+                bets = bets.Where(b => b.SportLeague != null && b.SportLeague.Id.ToString() == sportFilter);
+            }
+
+            if (!string.IsNullOrEmpty(betTypeFilter))
+            {
+                if (Enum.TryParse<Models.BetType>(betTypeFilter, out var betType))
+                {
+                    bets = bets.Where(b => b.BetType == betType);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(resultFilter))
+            {
+                if (Enum.TryParse<Models.BetResult>(resultFilter, out var result))
+                {
+                    bets = bets.Where(b => b.Result == result);
+                }
+            }
+
+            // Apply sorting
+            bets = sortOrder switch
             {
                 "date_desc" => bets.OrderByDescending(b => b.BetDate),
                 "Sport" => bets.OrderBy(b => b.SportLeague != null ? b.SportLeague.Name : ""),
                 "sport_desc" => bets.OrderByDescending(b => b.SportLeague != null ? b.SportLeague.Name : ""),
+                "BetType" => bets.OrderBy(b => b.BetType),
+                "bettype_desc" => bets.OrderByDescending(b => b.BetType),
+                "Match" => bets.OrderBy(b => b.Match),
+                "match_desc" => bets.OrderByDescending(b => b.Match),
+                "Selection" => bets.OrderBy(b => b.BetSelection),
+                "selection_desc" => bets.OrderByDescending(b => b.BetSelection),
+                "Stake" => bets.OrderBy(b => b.Stake),
+                "stake_desc" => bets.OrderByDescending(b => b.Stake),
+                "Odds" => bets.OrderBy(b => b.Odds),
+                "odds_desc" => bets.OrderByDescending(b => b.Odds),
                 "Result" => bets.OrderBy(b => b.Result),
                 "result_desc" => bets.OrderByDescending(b => b.Result),
                 "Amount" => bets.OrderBy(b => b.AmountWonLost),
                 "amount_desc" => bets.OrderByDescending(b => b.AmountWonLost),
                 _ => bets.OrderBy(b => b.BetDate),
-            };
-
-            int pageSize = 10;
-            return View(await PaginatedList<Bet>.CreateAsync(bets.AsNoTracking(), pageNumber ?? 1, pageSize));
+            };            var selectedPageSize = pageSize ?? 10;
+            return View(await PaginatedList<Bet>.CreateAsync(bets.AsNoTracking(), pageNumber ?? 1, selectedPageSize));
         }        // GET: Bets/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -871,6 +936,86 @@ namespace SportsBettingTracker.Controllers
                                   bet.Result == BetResult.LOSS ? "bg-danger" : 
                                   bet.Result == BetResult.PUSH ? "bg-secondary" : "bg-warning"
                 });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: Bets/BulkEdit
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkEdit([FromBody] BulkEditModel model)
+        {
+            if (model == null || model.Ids == null || !model.Ids.Any())
+            {
+                return Json(new { success = false, message = "No bets selected" });
+            }
+
+            // Get current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+
+            try
+            {
+                var bets = await _context.Bets
+                    .Where(b => model.Ids.Contains(b.Id) && b.UserId == userId)
+                    .ToListAsync();
+
+                foreach (var bet in bets)
+                {
+                    if (!string.IsNullOrEmpty(model.Result))
+                    {
+                        if (Enum.TryParse<BetResult>(model.Result, out var result))
+                        {
+                            bet.Result = result;
+                            bet.CalculateWinLoss();
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(model.SportLeagueId) && int.TryParse(model.SportLeagueId, out var sportLeagueId))
+                    {
+                        var league = await _context.SportLeagues.FindAsync(sportLeagueId);
+                        if (league != null)
+                        {
+                            bet.SportLeagueId = sportLeagueId;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: Bets/BulkDelete
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkDelete([FromBody] int[] ids)
+        {
+            if (ids == null || !ids.Any())
+            {
+                return Json(new { success = false, message = "No bets selected" });
+            }
+
+            // Get current user
+            var currentUser = await _userManager.GetUserAsync(User);
+            string? userId = currentUser?.Id;
+
+            try
+            {
+                var bets = await _context.Bets
+                    .Where(b => ids.Contains(b.Id) && b.UserId == userId)
+                    .ToListAsync();
+
+                _context.Bets.RemoveRange(bets);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
             }
             catch (Exception ex)
             {
