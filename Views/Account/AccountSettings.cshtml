@@ -40,7 +40,24 @@
                             <span asp-validation-for="PhoneNumber" class="text-danger"></span>
                         </div>
                         
-                        <h4 class="mt-4 mb-3">Change Password</h4>
+                        <h4 class="mt-4 mb-3">Privacy Settings</h4>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsProfilePublic" class="form-check-input" />
+                                <label asp-for="IsProfilePublic" class="form-check-label">
+                                    Make my profile public (allows other users to see your profile and public bets)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="DefaultBetPrivacy" class="form-check-input" />
+                                <label asp-for="DefaultBetPrivacy" class="form-check-label">
+                                    Make new bets public by default (can be changed when creating/editing bets)
+                                </label>
+                            </div>
+                        </div>
+                          <h4 class="mt-4 mb-3">Change Password</h4>
                         <div class="mb-3">
                             <label asp-for="CurrentPassword" class="form-label"></label>
                             <input asp-for="CurrentPassword" class="form-control" />

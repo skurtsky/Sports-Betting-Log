@@ -16,7 +16,8 @@ namespace SportsBettingTracker.Models
         public int Id { get; set; }
         
         // User relationship
-        public string? UserId { get; set; }
+        [Required]
+        public string UserId { get; set; } = string.Empty;
         
         [ForeignKey("UserId")]
         public ApplicationUser? User { get; set; }
@@ -62,6 +63,14 @@ namespace SportsBettingTracker.Models
         [Display(Name = "Amount Won/Lost")]
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? AmountWonLost { get; set; }
+
+        // Social & Privacy
+        [Display(Name = "Public")]
+        public bool IsPublic { get; set; } = true;  // Default to user's DefaultBetPrivacy
+        
+        // Navigation properties for social features
+        public virtual ICollection<BetLike> Likes { get; set; } = new List<BetLike>();
+        public virtual ICollection<BetComment> Comments { get; set; } = new List<BetComment>();
         
         [NotMapped]
         public string FormattedOdds => Odds > 0 ? $"+{Odds}" : $"{Odds}";

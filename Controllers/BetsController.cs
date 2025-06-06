@@ -78,9 +78,8 @@ namespace SportsBettingTracker.Controllers
             }
             // If we have no explicit parameters but have saved filters, use those
             else if (Request.Query.Count == 0 && TempData.ContainsKey("FiltersApplied"))
-            {
-                sortOrder = TempData["FilterSortOrder"] as string;
-                searchString = TempData["FilterSearchString"] as string;
+            {                sortOrder = TempData["FilterSortOrder"]?.ToString() ?? string.Empty;
+                searchString = TempData["FilterSearchString"]?.ToString() ?? string.Empty;
                 pageNumber = TempData["FilterPageNumber"] as int?;
                 pageSize = TempData["FilterPageSize"] as int?;
                 dateFilter = TempData["FilterDateFilter"] as string;
@@ -215,10 +214,13 @@ namespace SportsBettingTracker.Controllers
             // Get current user
             var currentUser = await _userManager.GetUserAsync(User);
             string? userId = currentUser?.Id;
-            bool isDemoUser = currentUser?.IsDemoUser ?? false;
 
             var bet = await _context.Bets
                 .Include(b => b.SportLeague)
+                .Include(b => b.User)
+                .Include(b => b.Likes)
+                .Include(b => b.Comments)
+                .ThenInclude(c => c.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
                 
             if (bet == null)
@@ -226,36 +228,55 @@ namespace SportsBettingTracker.Controllers
                 return NotFound();
             }
             
-            // Check if user owns the bet - strict ownership check
-            bool canAccess = bet.UserId == userId;
+            // Check if user can access the bet
+            bool canAccess = bet.UserId == userId || bet.IsPublic;
             if (!canAccess)
             {
                 return Forbid();
             }
 
             return View(bet);
-        }
-
-        // GET: Bets/Create
-        public IActionResult Create()
+        }        // GET: Bets/Create
+        public async Task<IActionResult> Create()
         {
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name");
+            
+            // Get current user to set default privacy
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser != null)
+            {
+                // Create an empty bet with default privacy set from user settings
+                var bet = new Bet
+                {
+                    BetDate = DateTime.Today,
+                    IsPublic = currentUser.DefaultBetPrivacy
+                };
+                
+                return View(bet);
+            }
+            
             return View();
-        }        // POST: Bets/Create
+        }// POST: Bets/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result")] Bet bet)
-        {            if (ModelState.IsValid)
+        public async Task<IActionResult> Create([Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result,IsPublic")] Bet bet)
+        {
+            if (ModelState.IsValid)
             {
                 // Get current user
                 var currentUser = await _userManager.GetUserAsync(User);
-                
-                // Always associate bet with the current user, including demo users
-                if (currentUser != null)
+                if (currentUser == null)
                 {
-                    bet.UserId = currentUser.Id;
+                    return NotFound();
                 }
-                  bet.CalculateWinLoss();
+                
+                bet.UserId = currentUser.Id;
+                
+                // Note: We're not checking if bet.IsPublic is false anymore, because
+                // in the form bind, false value is when unchecked, which is intentional.
+                // This also means the default is properly applied from the form
+
+                bet.CalculateWinLoss();
                 _context.Add(bet);
                 await _context.SaveChangesAsync();
                 return RedirectToIndexWithFilters();
@@ -291,9 +312,8 @@ namespace SportsBettingTracker.Controllers
             return View(bet);
         }        // POST: Bets/Edit/5
         [HttpPost]
-        [ActionName("Edit")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditPost(int id, [Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result")] Bet bet)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result,IsPublic")] Bet bet)
         {
             if (id != bet.Id)
             {
@@ -303,28 +323,29 @@ namespace SportsBettingTracker.Controllers
             // Get current user
             var currentUser = await _userManager.GetUserAsync(User);
             string? userId = currentUser?.Id;
-            bool isDemoUser = currentUser?.IsDemoUser ?? false;
             
-            // Get original bet to check ownership
+            // Get original bet to check ownership and preserve the UserId
             var originalBet = await _context.Bets.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
             if (originalBet == null)
             {
                 return NotFound();
             }
-              // Check if user owns the bet - strict ownership check
+            
+            // Check if user owns the bet - strict ownership check
             bool canAccess = originalBet.UserId == userId;
             if (!canAccess)
             {
                 return Forbid();
-            }
-            
-            // Preserve the UserId from the original bet
-            bet.UserId = originalBet.UserId;
-
-            if (ModelState.IsValid)
+            }            if (ModelState.IsValid)
             {
                 try
-                {                    bet.CalculateWinLoss();
+                {
+                    bet.UserId = originalBet.UserId;  // Preserve the original owner
+                    bet.CalculateWinLoss();
+                    
+                    // Ensure we're updating the IsPublic property that comes from the form
+                    // The checkbox sends true when checked, false when unchecked
+                    
                     _context.Update(bet);
                     await _context.SaveChangesAsync();
                 }

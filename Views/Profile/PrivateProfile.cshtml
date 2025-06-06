@@ -1,0 +1,10 @@
+@{
+    ViewData["Title"] = "Private Profile";
+}
+<div class="container">
+    <div class="alert alert-warning mt-4">
+        <h4>This profile is private.</h4>
+        <p>The user has set their profile to private. You cannot view their bets or statistics.</p>
+    </div>
+    <a asp-action="Index" asp-controller="Feed" class="btn btn-primary">Back to Feed</a>
+</div>

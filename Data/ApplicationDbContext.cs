@@ -14,10 +14,52 @@ namespace SportsBettingTracker.Data
         public DbSet<Bet> Bets { get; set; }
         public DbSet<SportLeague> SportLeagues { get; set; }
         public DbSet<BetTypeConfiguration> BetTypeConfigurations { get; set; }
-          protected override void OnModelCreating(ModelBuilder modelBuilder)
+        public DbSet<BetLike> BetLikes { get; set; }
+        public DbSet<BetComment> BetComments { get; set; }
+        public DbSet<UserFollow> UserFollows { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-              // Add some default sport leagues with display order
+            
+            // Configure relationships
+            modelBuilder.Entity<BetLike>()
+                .HasOne(bl => bl.User)
+                .WithMany()
+                .HasForeignKey(bl => bl.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BetLike>()
+                .HasOne(bl => bl.Bet)
+                .WithMany(b => b.Likes)
+                .HasForeignKey(bl => bl.BetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BetComment>()
+                .HasOne(bc => bc.User)
+                .WithMany()
+                .HasForeignKey(bc => bc.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BetComment>()
+                .HasOne(bc => bc.Bet)
+                .WithMany(b => b.Comments)
+                .HasForeignKey(bc => bc.BetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserFollow>()
+                .HasOne(uf => uf.Follower)
+                .WithMany(u => u.FollowingUsers)
+                .HasForeignKey(uf => uf.FollowerId)
+                .OnDelete(DeleteBehavior.Restrict); // Use Restrict to prevent cascade delete cycles
+
+            modelBuilder.Entity<UserFollow>()
+                .HasOne(uf => uf.Following)
+                .WithMany(u => u.FollowedByUsers)
+                .HasForeignKey(uf => uf.FollowingId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Add some default sport leagues with display order
             modelBuilder.Entity<SportLeague>().HasData(
                 new SportLeague { Id = 1, Name = "NFL", Description = "National Football League", DisplayOrder = 1, IsActive = true },
                 new SportLeague { Id = 2, Name = "NBA", Description = "National Basketball Association", DisplayOrder = 2, IsActive = true },

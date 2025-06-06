@@ -149,7 +149,9 @@ namespace SportsBettingTracker.Controllers
             {
                 Email = user.Email,
                 DisplayName = user.DisplayName,
-                PhoneNumber = user.PhoneNumber
+                PhoneNumber = user.PhoneNumber,
+                IsProfilePublic = user.IsProfilePublic,
+                DefaultBetPrivacy = user.DefaultBetPrivacy
             };
             
             return View(model);
@@ -177,9 +179,10 @@ namespace SportsBettingTracker.Controllers
                 ModelState.AddModelError(string.Empty, "Demo users cannot update account settings.");
                 return View(model);
             }
-            
-            user.DisplayName = model.DisplayName;
+              user.DisplayName = model.DisplayName;
             user.PhoneNumber = model.PhoneNumber;
+            user.IsProfilePublic = model.IsProfilePublic;
+            user.DefaultBetPrivacy = model.DefaultBetPrivacy;
             
             // Only update email if it's changed
             if (model.Email != user.Email)

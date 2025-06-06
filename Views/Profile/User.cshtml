@@ -1,0 +1,92 @@
+@model SportsBettingTracker.ViewModels.ProfileViewModel
+@using SportsBettingTracker.Models
+@{
+    ViewData["Title"] = Model.User.DisplayName + "'s Profile";
+}
+<div class="container">
+    <h1>@Model.User.DisplayName's Profile</h1>
+    
+    @if (Model.IsOwnProfile && !Model.User.IsProfilePublic)
+    {
+        <div class="alert alert-info mb-3">
+            <strong>Note:</strong> Your profile is set to private. You can see all your bets, but other users will only see the "This profile is private" message.
+        </div>
+    }
+    
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <dl class="row">
+                <dt class="col-sm-3">Total Bets</dt>
+                <dd class="col-sm-9">@Model.TotalBets</dd>
+                <dt class="col-sm-3">Win Rate</dt>
+                <dd class="col-sm-9">@Model.FormattedWinRate</dd>
+                <dt class="col-sm-3">Net Profit</dt>
+                <dd class="col-sm-9">@Model.FormattedNetProfit</dd>
+                <dt class="col-sm-3">ROI</dt>
+                <dd class="col-sm-9">@Model.FormattedROI</dd>
+            </dl>
+            <div class="mb-2">
+                @if (!Model.IsOwnProfile)
+                {
+                    <form asp-action="Follow" asp-route-id="@Model.User.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-@(Model.IsFollowing ? "secondary" : "primary")">
+                            @(Model.IsFollowing ? "Unfollow" : "Follow")
+                        </button>
+                    </form>
+                }
+                @if (Model.IsOwnProfile)
+                {
+                    <form asp-action="UpdatePrivacy" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <label class="form-check-label me-2">
+                            <input type="checkbox" name="isProfilePublic" value="true" @(Model.User.IsProfilePublic ? "checked" : "") /> Public Profile
+                        </label>
+                        <label class="form-check-label me-2">
+                            <input type="checkbox" name="defaultBetPrivacy" value="true" @(Model.User.DefaultBetPrivacy ? "checked" : "") /> Public Bets by Default
+                        </label>
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Update Privacy</button>
+                    </form>
+                }
+            </div>
+            <h3>Last 10 Public Bets</h3>
+            @if (!Model.RecentBets.Any())
+            {
+                <div class="alert alert-info">No public bets to display.</div>
+            }
+            else
+            {
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Match</th>
+                            <th>Selection</th>
+                            <th>Odds</th>
+                            <th>Result</th>
+                            <th>Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var bet in Model.RecentBets)
+                        {
+                            <tr>
+                                <td>@bet.BetDate.ToString("yyyy-MM-dd")</td>
+                                <td>@bet.Match</td>
+                                <td>@bet.BetSelection</td>
+                                <td>@bet.FormattedOdds</td>
+                                <td>
+                                    <span class="badge @(bet.Result == BetResult.WIN ? "bg-success" : bet.Result == BetResult.LOSS ? "bg-danger" : bet.Result == BetResult.PUSH ? "bg-warning" : "bg-secondary")">
+                                        @bet.Result.ToString()
+                                    </span>
+                                </td>
+                                <td>@bet.FormattedAmountWonLost</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <a asp-action="AllBets" asp-route-id="@Model.User.Id" class="btn btn-link">View All Public Bets</a>
+            }
+        </div>
+    </div>
+</div>
