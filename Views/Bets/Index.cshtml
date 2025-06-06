@@ -390,8 +390,7 @@
                                 <option value="@league.Id">@league.Name</option>
                             }
                         </select>
-                    </div>
-                    <div class="mb-3">
+                    </div>                    <div class="mb-3">
                         <label class="form-label">Bet Type</label>
                         <select class="form-select" name="BetType">
                             <option value="">No Change</option>
@@ -400,6 +399,15 @@
                                 <option value="@betType">@betType</option>
                             }
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Visibility</label>
+                        <select class="form-select" name="IsPublic">
+                            <option value="">No Change</option>
+                            <option value="true">Public</option>
+                            <option value="false">Private</option>
+                        </select>
+                        <small class="form-text text-muted">Public bets are visible to your followers</small>
                     </div>
                 </form>
             </div>
@@ -488,7 +496,9 @@
                 ids: selectedIds,
                 result: $('#bulkEditForm select[name="Result"]').val(),
                 sportLeagueId: $('#bulkEditForm select[name="SportLeagueId"]').val(),
-                betType: $('#bulkEditForm select[name="BetType"]').val()
+                betType: $('#bulkEditForm select[name="BetType"]').val(),
+                isPublic: $('#bulkEditForm select[name="IsPublic"]').val() === "" ? null : 
+                          $('#bulkEditForm select[name="IsPublic"]').val() === "true"
             };
 
             $.ajax({

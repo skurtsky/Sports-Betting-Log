@@ -8,5 +8,6 @@ namespace SportsBettingTracker.Models
         public string? Result { get; set; }
         public string? SportLeagueId { get; set; }
         public string? BetType { get; set; }
+        public bool? IsPublic { get; set; }
     }
 }

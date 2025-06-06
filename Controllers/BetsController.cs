@@ -847,14 +847,16 @@ namespace SportsBettingTracker.Controllers
                                                !string.IsNullOrWhiteSpace(bet.Match) && 
                                                !string.IsNullOrWhiteSpace(bet.BetSelection) && 
                                                stakeSet && oddsSet;                            if (hasRequiredFields)
-                            {
-                                // Add the current user ID to the bet
+                            {                                // Add the current user ID to the bet
                                 var currentUser = await _userManager.GetUserAsync(User);
                                 
                                 // Always associate with current user - this is critical for data isolation
                                 if (currentUser != null)
                                 {
                                     bet.UserId = currentUser.Id;
+                                    
+                                    // Set visibility based on user's default preference
+                                    bet.IsPublic = currentUser.DefaultBetPrivacy;
                                 }
                                 
                                 _context.Bets.Add(bet);
@@ -1061,14 +1063,17 @@ namespace SportsBettingTracker.Controllers
                         {
                             bet.SportLeagueId = sportLeagueId;
                         }
-                    }
-
-                    if (!string.IsNullOrEmpty(model.BetType))
+                    }                    if (!string.IsNullOrEmpty(model.BetType))
                     {
                         if (Enum.TryParse<BetType>(model.BetType, out var betType))
                         {
                             bet.BetType = betType;
                         }
+                    }
+                    
+                    if (model.IsPublic.HasValue)
+                    {
+                        bet.IsPublic = model.IsPublic.Value;
                     }
                 }
 
