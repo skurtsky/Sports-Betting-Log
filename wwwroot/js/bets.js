@@ -1,5 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle clear filters button
+document.addEventListener('DOMContentLoaded', function() {    // Handle clear filters button
     document.getElementById('clearFilters')?.addEventListener('click', function() {
         // Reset all form inputs
         const form = document.getElementById('filterForm');
@@ -13,6 +12,13 @@ document.addEventListener('DOMContentLoaded', function() {
         inputs.forEach(input => {
             input.value = '';
         });
+        
+        // Add resetFilters parameter
+        const resetInput = document.createElement('input');
+        resetInput.type = 'hidden';
+        resetInput.name = 'resetFilters';
+        resetInput.value = 'true';
+        form.appendChild(resetInput);
         
         // Submit the form to refresh the page
         form.submit();

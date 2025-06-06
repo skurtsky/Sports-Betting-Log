@@ -23,18 +23,82 @@ namespace SportsBettingTracker.Controllers
         {
             _context = context;
             _userManager = userManager;
-        }        // GET: Bets
-        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber, int? pageSize, string? dateFilter, string? sportFilter, string? betTypeFilter, string? resultFilter)
+        }          // Helper method to save filter state to TempData
+        private void SaveFilterState(string? sortOrder, string? searchString, int? pageNumber, 
+            int? pageSize, string? dateFilter, string? sportFilter, string? betTypeFilter, string? resultFilter)
         {
-            ViewData["CurrentSort"] = sortOrder;
+            TempData["FilterSortOrder"] = sortOrder;
+            TempData["FilterSearchString"] = searchString;
+            TempData["FilterPageNumber"] = pageNumber;
+            TempData["FilterPageSize"] = pageSize;
+            TempData["FilterDateFilter"] = dateFilter;
+            TempData["FilterSportFilter"] = sportFilter;
+            TempData["FilterBetTypeFilter"] = betTypeFilter;
+            TempData["FilterResultFilter"] = resultFilter;
+            
+            // Set a flag to indicate filters are applied
+            TempData["FiltersApplied"] = true;
+        }
+        
+        // Helper method to clear filter state from TempData
+        private void ClearFilterState()
+        {
+            TempData.Remove("FilterSortOrder");
+            TempData.Remove("FilterSearchString");
+            TempData.Remove("FilterPageNumber");
+            TempData.Remove("FilterPageSize");
+            TempData.Remove("FilterDateFilter");
+            TempData.Remove("FilterSportFilter");
+            TempData.Remove("FilterBetTypeFilter");
+            TempData.Remove("FilterResultFilter");
+            TempData.Remove("FiltersApplied");
+        }
+          // Helper method to redirect to Index with preserved filters
+        private IActionResult RedirectToIndexWithFilters()
+        {
+            if (TempData.ContainsKey("FiltersApplied"))
+            {
+                var isFiltersApplied = TempData.Peek("FiltersApplied") as bool?;
+                if (isFiltersApplied.HasValue && isFiltersApplied.Value)
+                {
+                    // Keep TempData for the next request by using Peek instead of accessing directly
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+            
+            return RedirectToAction(nameof(Index));
+        }
+          // GET: Bets
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber, int? pageSize, string? dateFilter, string? sportFilter, string? betTypeFilter, string? resultFilter, bool resetFilters = false)
+        {
+            // If reset is requested or if this is a direct navigation from the menu (no parameters and no saved filters), clear any saved filters
+            if (resetFilters || (Request.Query.Count == 0 && !TempData.ContainsKey("FiltersApplied")))
+            {
+                ClearFilterState();
+            }
+            // If we have no explicit parameters but have saved filters, use those
+            else if (Request.Query.Count == 0 && TempData.ContainsKey("FiltersApplied"))
+            {
+                sortOrder = TempData["FilterSortOrder"] as string;
+                searchString = TempData["FilterSearchString"] as string;
+                pageNumber = TempData["FilterPageNumber"] as int?;
+                pageSize = TempData["FilterPageSize"] as int?;
+                dateFilter = TempData["FilterDateFilter"] as string;
+                sportFilter = TempData["FilterSportFilter"] as string;
+                betTypeFilter = TempData["FilterBetTypeFilter"] as string;
+                resultFilter = TempData["FilterResultFilter"] as string;
+            }
+
+            // Save the current filter state for the next request
+            SaveFilterState(sortOrder, searchString, pageNumber, pageSize, dateFilter, sportFilter, betTypeFilter, resultFilter);            ViewData["CurrentSort"] = sortOrder;
             // Sort parameters
             ViewData["DateSortParm"] = string.IsNullOrEmpty(sortOrder) ? "date_desc" : "";
             ViewData["SportSortParm"] = sortOrder == "Sport" ? "sport_desc" : "Sport";
             ViewData["BetTypeSortParm"] = sortOrder == "BetType" ? "bettype_desc" : "BetType";
             ViewData["MatchSortParm"] = sortOrder == "Match" ? "match_desc" : "Match";
             ViewData["SelectionSortParm"] = sortOrder == "Selection" ? "selection_desc" : "Selection";
-            ViewData["StakeSortParm"] = sortOrder == "Stake" ? "stake_desc" : "Stake";
-            ViewData["OddsSortParm"] = sortOrder == "Odds" ? "odds_desc" : "Odds";
+            ViewData["StakeSortParm"] = string.IsNullOrEmpty(sortOrder) ? "Stake" : (sortOrder == "Stake" ? "stake_desc" : "Stake");
+            ViewData["OddsSortParm"] = string.IsNullOrEmpty(sortOrder) ? "Odds" : (sortOrder == "Odds" ? "odds_desc" : "Odds");
             ViewData["ResultSortParm"] = sortOrder == "Result" ? "result_desc" : "Result";
             ViewData["AmountSortParm"] = sortOrder == "Amount" ? "amount_desc" : "Amount";
 
@@ -117,10 +181,8 @@ namespace SportsBettingTracker.Controllers
                 {
                     bets = bets.Where(b => b.Result == result);
                 }
-            }
-
-            // Apply sorting
-            bets = sortOrder switch
+            }            // Apply sorting
+            bets = (sortOrder ?? string.Empty) switch
             {
                 "date_desc" => bets.OrderByDescending(b => b.BetDate),
                 "Sport" => bets.OrderBy(b => b.SportLeague != null ? b.SportLeague.Name : ""),
@@ -140,7 +202,7 @@ namespace SportsBettingTracker.Controllers
                 "Amount" => bets.OrderBy(b => b.AmountWonLost),
                 "amount_desc" => bets.OrderByDescending(b => b.AmountWonLost),
                 _ => bets.OrderBy(b => b.BetDate),
-            };            var selectedPageSize = pageSize ?? 10;
+            };var selectedPageSize = pageSize ?? 10;
             return View(await PaginatedList<Bet>.CreateAsync(bets.AsNoTracking(), pageNumber ?? 1, selectedPageSize));
         }        // GET: Bets/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -193,11 +255,10 @@ namespace SportsBettingTracker.Controllers
                 {
                     bet.UserId = currentUser.Id;
                 }
-                
-                bet.CalculateWinLoss();
+                  bet.CalculateWinLoss();
                 _context.Add(bet);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToIndexWithFilters();
             }
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
@@ -263,8 +324,7 @@ namespace SportsBettingTracker.Controllers
             if (ModelState.IsValid)
             {
                 try
-                {
-                    bet.CalculateWinLoss();
+                {                    bet.CalculateWinLoss();
                     _context.Update(bet);
                     await _context.SaveChangesAsync();
                 }
@@ -279,7 +339,7 @@ namespace SportsBettingTracker.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                return RedirectToIndexWithFilters();
             }
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
@@ -329,12 +389,11 @@ namespace SportsBettingTracker.Controllers
                 if (!canAccess)
                 {
                     return Forbid();
-                }
-                _context.Bets.Remove(bet);
+                }                _context.Bets.Remove(bet);
                 await _context.SaveChangesAsync();
             }
             
-            return RedirectToAction(nameof(Index));
+            return RedirectToIndexWithFilters();
         }        // GET: Bets/ExportCsv
         public async Task<IActionResult> ExportCsv()
         {
@@ -840,10 +899,9 @@ namespace SportsBettingTracker.Controllers
                 catch
                 {
                     // Ignore errors during cleanup
-                }
-            }
+                }            }
             
-            return RedirectToAction("Index");
+            return RedirectToIndexWithFilters();
         }
 
         // POST: Bets/QuickEdit - API endpoint for in-line editing
