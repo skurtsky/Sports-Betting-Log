@@ -1,0 +1,64 @@
+@model List<SportsBettingTracker.Models.ApplicationUser>
+@{
+    var profileUser = ViewData["ProfileUser"] as SportsBettingTracker.Models.ApplicationUser;
+    var listTitle = ViewData["ListTitle"] as string;
+    var totalCount = ViewData["TotalCount"] as int? ?? 0;
+    var currentPage = ViewData["CurrentPage"] as int? ?? 1;
+    var pageCount = ViewData["PageCount"] as int? ?? 1;
+    
+    ViewData["Title"] = $"{profileUser?.DisplayName}'s {listTitle}";
+}
+
+<div class="container mt-3">
+    <h1>@profileUser?.DisplayName's @listTitle</h1>
+    <h5>@totalCount total @(listTitle.ToLower())</h5>
+    
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            No @(listTitle.ToLower()) to display.
+        </div>
+    }
+    else
+    {
+        <div class="list-group mt-3">
+            @foreach (var user in Model)
+            {
+                <a href="@Url.Action("UserProfile", "Profile", new { id = user.Id })" class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-1">@user.DisplayName</h5>
+                        <small>Since @user.CreatedAt.ToString("MMM d, yyyy")</small>
+                    </div>
+                </a>
+            }
+        </div>
+        
+        <div class="d-flex justify-content-between mt-3">
+            @if (currentPage > 1)
+            {
+                <a asp-action="@ViewContext.RouteData.Values["action"]" asp-route-id="@profileUser?.Id" asp-route-pageNumber="@(currentPage - 1)" class="btn btn-outline-primary">&laquo; Previous</a>
+            }
+            else
+            {
+                <div></div>
+            }
+            
+            <span class="align-self-center">
+                Page @currentPage of @pageCount
+            </span>
+            
+            @if (currentPage < pageCount)
+            {
+                <a asp-action="@ViewContext.RouteData.Values["action"]" asp-route-id="@profileUser?.Id" asp-route-pageNumber="@(currentPage + 1)" class="btn btn-outline-primary">Next &raquo;</a>
+            }
+            else
+            {
+                <div></div>
+            }
+        </div>
+    }
+    
+    <div class="mt-3">
+        <a asp-action="UserProfile" asp-route-id="@profileUser?.Id" class="btn btn-secondary">Back to Profile</a>
+    </div>
+</div>

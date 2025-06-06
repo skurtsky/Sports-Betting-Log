@@ -57,6 +57,15 @@ main {
   background-color: #f8f9fa;
 }
 
+/* Table styles */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-pointer:hover {
+    background-color: rgba(0, 123, 255, 0.05) !important;
+}
+
 /* Badge styles */
 .badge.bg-success {
   background-color: #28a745 !important;

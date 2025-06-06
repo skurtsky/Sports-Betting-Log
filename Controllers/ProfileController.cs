@@ -40,17 +40,17 @@ namespace SportsBettingTracker.Controllers
                 return View("PrivateProfile");
             }
 
-            // Get user's public bets
+            // Get user's public bets only
             var bets = await _context.Bets
                 .Include(b => b.SportLeague)
-                .Where(b => b.UserId == id && (b.IsPublic || currentUser.Id == id))
+                .Where(b => b.UserId == id && b.IsPublic)
                 .OrderByDescending(b => b.BetDate)
                 .Take(10)
                 .ToListAsync();
 
-            // Calculate stats
+            // Calculate stats (for public bets only if not own profile)
             var allBets = await _context.Bets
-                .Where(b => b.UserId == id && (b.IsPublic || currentUser.Id == id))
+                .Where(b => b.UserId == id && b.IsPublic)
                 .ToListAsync();
 
             var totalBets = allBets.Count;
@@ -63,6 +63,13 @@ namespace SportsBettingTracker.Controllers
             var isFollowing = await _context.UserFollows
                 .AnyAsync(uf => uf.FollowerId == currentUser.Id && uf.FollowingId == id);
 
+            // Get followers and following counts
+            var followersCount = await _context.UserFollows
+                .CountAsync(uf => uf.FollowingId == id);
+                
+            var followingCount = await _context.UserFollows
+                .CountAsync(uf => uf.FollowerId == id);
+
             var viewModel = new ProfileViewModel
             {
                 User = profileUser,
@@ -72,7 +79,9 @@ namespace SportsBettingTracker.Controllers
                 NetProfit = netProfit,
                 ROI = roi,
                 IsFollowing = isFollowing,
-                IsOwnProfile = currentUser.Id == id
+                IsOwnProfile = currentUser.Id == id,
+                FollowersCount = followersCount,
+                FollowingCount = followingCount
             };
 
             return View(viewModel);
@@ -99,9 +108,9 @@ namespace SportsBettingTracker.Controllers
                 return View("PrivateProfile");
             }
 
-            var betsQuery = _context.Bets
+var betsQuery = _context.Bets
                 .Include(b => b.SportLeague)
-                .Where(b => b.UserId == id && (b.IsPublic || currentUser.Id == id))
+                .Where(b => b.UserId == id && b.IsPublic)
                 .OrderByDescending(b => b.BetDate);
 
             int pageSize = 20;
@@ -111,7 +120,79 @@ namespace SportsBettingTracker.Controllers
             return View(bets);
         }
 
-        // POST: Profile/Follow/{id}
+        // GET: Profile/Followers/{id}
+        public async Task<IActionResult> Followers(string id, int? pageNumber)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                return NotFound();
+            }
+
+            var profileUser = await _userManager.FindByIdAsync(id);
+            if (profileUser == null)
+            {
+                return NotFound();
+            }
+
+            // Check if profile is private and user is not viewing their own profile
+            if (!profileUser.IsProfilePublic && currentUser.Id != profileUser.Id)
+            {
+                return View("PrivateProfile");
+            }            var followerUsers = await _context.UserFollows
+                .Include(uf => uf.Follower)
+                .Where(uf => uf.FollowingId == id && uf.Follower != null)
+                .OrderByDescending(uf => uf.CreatedAt)
+                .Select(uf => uf.Follower)
+                .ToListAsync();
+
+            int pageSize = 20;
+            var pageCount = (int)Math.Ceiling(followerUsers.Count / (double)pageSize);
+            var currentPage = pageNumber ?? 1;
+            var users = followerUsers
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            ViewData["ProfileUser"] = profileUser;
+            ViewData["ListTitle"] = "Followers";
+            return View("UserList", users);
+        }
+
+        // GET: Profile/Following/{id}
+        public async Task<IActionResult> Following(string id, int? pageNumber)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                return NotFound();
+            }
+
+            var profileUser = await _userManager.FindByIdAsync(id);
+            if (profileUser == null)
+            {
+                return NotFound();
+            }
+
+            // Check if profile is private and user is not viewing their own profile
+            if (!profileUser.IsProfilePublic && currentUser.Id != profileUser.Id)
+            {
+                return View("PrivateProfile");
+            }
+
+            var followingQuery = _context.UserFollows
+                .Include(uf => uf.Following)
+                .Where(uf => uf.FollowerId == id)
+                .OrderByDescending(uf => uf.CreatedAt)
+                .Select(uf => uf.Following);
+
+            int pageSize = 20;
+            var users = await PaginatedList<ApplicationUser>.CreateAsync(followingQuery.AsQueryable(), pageNumber ?? 1, pageSize);
+
+            ViewData["ProfileUser"] = profileUser;
+            ViewData["ListTitle"] = "Following";
+            return View("UserList", users);
+        }        // POST: Profile/Follow/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Follow(string id)
@@ -138,15 +219,30 @@ namespace SportsBettingTracker.Controllers
 
             if (existingFollow == null)
             {
+                // Creating a new follow
                 var userFollow = new UserFollow
                 {
                     FollowerId = currentUser.Id,
-                    FollowingId = id
+                    FollowingId = id,
+                    CreatedAt = DateTime.UtcNow
                 };
                 _context.UserFollows.Add(userFollow);
+                
+                // Create notification for the user being followed
+                var notification = new Notification
+                {
+                    UserId = id,
+                    Type = NotificationType.NewFollower,
+                    Message = $"{currentUser.DisplayName} started following you",
+                    ActorUserId = currentUser.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                _context.Notifications.Add(notification);
             }
             else
             {
+                // Unfollowing
                 _context.UserFollows.Remove(existingFollow);
             }
 

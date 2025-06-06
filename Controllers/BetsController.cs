@@ -1109,8 +1109,179 @@ namespace SportsBettingTracker.Controllers
             {
                 return Json(new { success = false, message = ex.Message });
             }
+        }        // POST: Bets/Like/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Like(int id, bool isLike)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                return NotFound();
+            }
+
+            var bet = await _context.Bets
+                .Include(b => b.Likes)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
+            if (bet == null || !bet.IsPublic)
+            {
+                return NotFound();
+            }
+
+            var existingLike = await _context.BetLikes
+                .FirstOrDefaultAsync(l => l.BetId == id && l.UserId == currentUser.Id);
+                
+            bool shouldCreateNotification = false;
+
+            if (existingLike == null)
+            {
+                var betLike = new BetLike
+                {
+                    BetId = id,
+                    UserId = currentUser.Id,
+                    IsLike = isLike,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.BetLikes.Add(betLike);
+                shouldCreateNotification = true;
+            }
+            else
+            {
+                if (existingLike.IsLike == isLike)
+                {
+                    _context.BetLikes.Remove(existingLike);
+                    shouldCreateNotification = false;
+                }
+                else
+                {
+                    existingLike.IsLike = isLike;
+                    shouldCreateNotification = true;
+                }
+            }
+
+            // Create notification if this is someone else's bet
+            if (shouldCreateNotification && bet.UserId != currentUser.Id)
+            {
+                var notification = new Notification
+                {
+                    UserId = bet.UserId,
+                    Type = NotificationType.BetLiked,
+                    Message = $"{currentUser.DisplayName} {(isLike ? "liked" : "disliked")} your bet on {bet.Match}",
+                    ActorUserId = currentUser.Id,
+                    BetId = bet.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                _context.Notifications.Add(notification);
+            }
+
+            await _context.SaveChangesAsync();
+
+            var likes = await _context.BetLikes.CountAsync(l => l.BetId == id && l.IsLike);
+            var dislikes = await _context.BetLikes.CountAsync(l => l.BetId == id && !l.IsLike);
+
+            return Json(new { 
+                success = true, 
+                likes = likes,
+                dislikes = dislikes,
+                currentUserReaction = existingLike == null ? "none" : (existingLike.IsLike ? "like" : "dislike")
+            });
+        }        // POST: Bets/Comment/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Comment(int id, string content)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                return NotFound();
+            }
+
+            var bet = await _context.Bets.FindAsync(id);
+            if (bet == null || !bet.IsPublic)
+            {
+                return NotFound();
+            }
+
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return BadRequest("Comment cannot be empty");
+            }
+
+            var comment = new BetComment
+            {
+                BetId = id,
+                UserId = currentUser.Id,
+                Content = content,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.BetComments.Add(comment);
+            
+            // Create notification if this is someone else's bet
+            if (bet.UserId != currentUser.Id)
+            {
+                var notification = new Notification
+                {
+                    UserId = bet.UserId,
+                    Type = NotificationType.BetCommented,
+                    Message = $"{currentUser.DisplayName} commented on your bet on {bet.Match}",
+                    ActorUserId = currentUser.Id,
+                    BetId = bet.Id,
+                    CommentId = comment.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                _context.Notifications.Add(notification);
+            }
+            
+            await _context.SaveChangesAsync();
+
+            // Return the comment with user details for immediate display
+            return Json(new { 
+                success = true, 
+                comment = new {
+                    id = comment.Id,
+                    content = comment.Content,
+                    createdAt = comment.CreatedAt.ToString("MM/dd/yyyy HH:mm"),
+                    user = new {
+                        id = currentUser.Id,
+                        displayName = currentUser.DisplayName
+                    }
+                }
+            });
         }
 
+        // DELETE: Bets/DeleteComment/{id}
+        [HttpDelete]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteComment(int id)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                return NotFound();
+            }
+
+            var comment = await _context.BetComments.FindAsync(id);
+            if (comment == null)
+            {
+                return NotFound();
+            }
+
+            // Only allow comment deletion by the comment author
+            if (comment.UserId != currentUser.Id)
+            {
+                return Forbid();
+            }
+
+            _context.BetComments.Remove(comment);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+        
         private bool BetExists(int id)
         {
             return _context.Bets.Any(e => e.Id == id);

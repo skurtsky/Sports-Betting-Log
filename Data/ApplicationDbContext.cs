@@ -17,6 +17,7 @@ namespace SportsBettingTracker.Data
         public DbSet<BetLike> BetLikes { get; set; }
         public DbSet<BetComment> BetComments { get; set; }
         public DbSet<UserFollow> UserFollows { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -57,6 +58,30 @@ namespace SportsBettingTracker.Data
                 .HasOne(uf => uf.Following)
                 .WithMany(u => u.FollowedByUsers)
                 .HasForeignKey(uf => uf.FollowingId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.ActorUser)
+                .WithMany()
+                .HasForeignKey(n => n.ActorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Bet)
+                .WithMany()
+                .HasForeignKey(n => n.BetId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Comment)
+                .WithMany()
+                .HasForeignKey(n => n.CommentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Add some default sport leagues with display order

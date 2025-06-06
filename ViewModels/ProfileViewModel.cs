@@ -12,6 +12,8 @@ namespace SportsBettingTracker.ViewModels
         public double ROI { get; set; }
         public bool IsFollowing { get; set; }
         public bool IsOwnProfile { get; set; }
+        public int FollowersCount { get; set; }
+        public int FollowingCount { get; set; }
         
         public string FormattedWinRate => $"{WinRate:F1}%";
         public string FormattedROI => $"{ROI:F1}%";
