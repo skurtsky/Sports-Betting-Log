@@ -106,8 +106,8 @@ async Task SeedDefaultUser(IServiceProvider services)
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var logger = services.GetRequiredService<ILogger<Program>>();
     
-    // Check if admin user exists
-    const string adminEmail = "admin@sportsbettingtracker.com";
+    // Check if admin user existso
+    const string adminEmail = "admin@kurtjohnson.me";
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     
     if (adminUser == null)
