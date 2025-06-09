@@ -11,6 +11,7 @@ using SportsBettingTracker.Models;
 using SportsBettingTracker.ViewModels;
 using Microsoft.VisualBasic.FileIO; // Add this for TextFieldParser
 using System.IO; // For file handling
+using System.ComponentModel.DataAnnotations; // Add for validation
 
 namespace SportsBettingTracker.Controllers
 {
@@ -261,26 +262,68 @@ namespace SportsBettingTracker.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,BetDate,SportLeagueId,BetType,Match,BetSelection,Stake,Odds,Result,IsPublic")] Bet bet)
         {
+            // Get current user - do this before validation
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                return NotFound();
+            }
+            
+            // Set the UserId property before model validation
+            bet.UserId = currentUser.Id;
+            
+            // Clear any existing UserId validation errors
+            ModelState.Remove("UserId");
+            
+            // Manually validate properties that are not bound from the form
+            // This will prevent "UserId field is required" errors
+            var validationContext = new ValidationContext(bet);
+            var validationResults = new List<ValidationResult>();
+            Validator.TryValidateObject(bet, validationContext, validationResults, true);
+            
+            // Check ModelState after setting UserId and removing the error
             if (ModelState.IsValid)
             {
-                // Get current user
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser == null)
-                {
-                    return NotFound();
-                }
-                
-                bet.UserId = currentUser.Id;
-                
                 // Note: We're not checking if bet.IsPublic is false anymore, because
                 // in the form bind, false value is when unchecked, which is intentional.
                 // This also means the default is properly applied from the form
 
                 bet.CalculateWinLoss();
-                _context.Add(bet);
-                await _context.SaveChangesAsync();
-                return RedirectToIndexWithFilters();
+                
+                try
+                {
+                    _context.Add(bet);
+                    await _context.SaveChangesAsync();
+                    return RedirectToIndexWithFilters();
+                }
+                catch (Exception ex)
+                {
+                    // Add error to ModelState to inform user
+                    ModelState.AddModelError("", $"Error saving bet: {ex.Message}");
+                }
             }
+            else
+            {
+                // Remove any UserId validation errors
+                if (ModelState.ContainsKey("UserId"))
+                {
+                    ModelState.Remove("UserId");
+                }
+                  // Log remaining validation errors for debugging
+                foreach (var modelStateEntry in ModelState.Values)
+                {
+                    foreach (var error in modelStateEntry.Errors)
+                    {
+                        // Don't add UserId errors to the display
+                        if (!error.ErrorMessage.Contains("UserId field is required"))
+                        {
+                            ModelState.AddModelError("", error.ErrorMessage);
+                        }
+                    }
+                }
+            }
+            
+            // If we get here, something went wrong
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
         }        // GET: Bets/Edit/5
@@ -336,11 +379,23 @@ namespace SportsBettingTracker.Controllers
             if (!canAccess)
             {
                 return Forbid();
-            }            if (ModelState.IsValid)
+            }            // Set the UserId property before model validation
+            bet.UserId = originalBet.UserId;  // Preserve the original owner
+            
+            // Clear any existing UserId validation errors
+            ModelState.Remove("UserId");
+            
+            // Manually validate properties that are not bound from the form
+            // This will prevent "UserId field is required" errors
+            var validationContext = new ValidationContext(bet);
+            var validationResults = new List<ValidationResult>();
+            Validator.TryValidateObject(bet, validationContext, validationResults, true);
+                
+            // Check ModelState after setting UserId and removing the error
+            if (ModelState.IsValid)
             {
                 try
                 {
-                    bet.UserId = originalBet.UserId;  // Preserve the original owner
                     bet.CalculateWinLoss();
                     
                     // Ensure we're updating the IsPublic property that comes from the form
@@ -348,6 +403,7 @@ namespace SportsBettingTracker.Controllers
                     
                     _context.Update(bet);
                     await _context.SaveChangesAsync();
+                    return RedirectToIndexWithFilters();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -357,11 +413,36 @@ namespace SportsBettingTracker.Controllers
                     }
                     else
                     {
-                        throw;
+                        ModelState.AddModelError("", "The bet was modified by another user. Please try again.");
                     }
                 }
-                return RedirectToIndexWithFilters();
+                catch (Exception ex)
+                {
+                    // Add error to ModelState to inform user
+                    ModelState.AddModelError("", $"Error saving bet: {ex.Message}");
+                }
             }
+            else
+            {
+                // Remove any UserId validation errors
+                if (ModelState.ContainsKey("UserId"))
+                {
+                    ModelState.Remove("UserId");
+                }
+                  // Log remaining validation errors for debugging
+                foreach (var modelStateEntry in ModelState.Values)
+                {
+                    foreach (var error in modelStateEntry.Errors)
+                    {
+                        // Don't add UserId errors to the display
+                        if (!error.ErrorMessage.Contains("UserId field is required"))
+                        {
+                            ModelState.AddModelError("", error.ErrorMessage);
+                        }
+                    }
+                }
+            }
+            
             ViewData["SportLeagueId"] = new SelectList(_context.SportLeagues, "Id", "Name", bet.SportLeagueId);
             return View(bet);
         }        // GET: Bets/Delete/5
