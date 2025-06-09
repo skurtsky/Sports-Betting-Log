@@ -34,15 +34,13 @@ namespace SportsBettingTracker.Controllers
             var followedUserIds = await _context.UserFollows
                 .Where(uf => uf.FollowerId == currentUser.Id)
                 .Select(uf => uf.FollowingId)
-                .ToListAsync();
-
-            // Get public bets from followed users
+                .ToListAsync();            // Get public bets from followed users and the current user's own public bets
             var betsQuery = _context.Bets
                 .Include(b => b.User)
                 .Include(b => b.SportLeague)
                 .Include(b => b.Likes)
                 .Include(b => b.Comments)
-                .Where(b => followedUserIds.Contains(b.UserId) && b.IsPublic)
+                .Where(b => (followedUserIds.Contains(b.UserId) || b.UserId == currentUser.Id) && b.IsPublic)
                 .OrderByDescending(b => b.BetDate);
 
             int pageSize = 10;
@@ -139,16 +137,14 @@ namespace SportsBettingTracker.Controllers
             await _context.SaveChangesAsync();
 
             // Load the user for the comment to include in response
-            await _context.Entry(comment).Reference(c => c.User).LoadAsync();
-
-            return Json(new
+            await _context.Entry(comment).Reference(c => c.User).LoadAsync();            return Json(new
             {
                 success = true,
                 comment = new
                 {
                     id = comment.Id,
                     content = comment.Content,
-                    userName = comment.User.DisplayName,
+                    userName = comment.User?.DisplayName ?? "Unknown User",
                     createdAt = comment.CreatedAt
                 }
             });

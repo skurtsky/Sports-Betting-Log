@@ -1,4 +1,6 @@
-@model PaginatedList<SportsBettingTracker.Models.Bet>
+@model SportsBettingTracker.ViewModels.PaginatedList<SportsBettingTracker.Models.Bet>
+@using System.Security.Claims
+@using SportsBettingTracker.Models
 @{
     ViewData["Title"] = "Feed";
 }
@@ -18,10 +20,13 @@
             <div class="col-md-8">
                 @foreach (var bet in Model)
                 {
-                    <div class="card mb-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card mb-3">                        <div class="card-header d-flex justify-content-between align-items-center">
                             <div>
                                 <a asp-controller="Profile" asp-action="UserProfile" asp-route-id="@bet.UserId">@bet.User?.DisplayName</a>
+                                @if (bet.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier))
+                                {
+                                    <span class="badge bg-primary ml-1">Your Bet</span>
+                                }
                                 <small class="text-muted ml-2">@bet.BetDate.ToString("MMM d, yyyy")</small>
                             </div>
                         </div>
