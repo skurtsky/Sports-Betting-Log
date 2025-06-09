@@ -19,6 +19,35 @@ body {
     padding: 20px 0;
 }
 
+/* Search bar styles */
+.search-container {
+    position: relative;
+    display: none;
+}
+
+.search-container.show {
+    display: block;
+}
+
+.search-input-wrapper {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    width: 300px;
+    z-index: 1000;
+    margin-top: 5px;
+}
+
+.search-results {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.search-icon {
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
 .card {
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     margin-bottom: 1.5rem;

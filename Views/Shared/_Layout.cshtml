@@ -43,12 +43,31 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Recommendations" asp-action="Index">
                                 <i class="bi bi-lightbulb"></i> Recommendations
                             </a>
-                        </li>                        <li class="nav-item">
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Leaderboard" asp-action="Index">
+                                <i class="bi bi-trophy"></i> Leaderboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Settings">
                                 <i class="bi bi-gear"></i> Settings
                             </a>
                         </li>
                     </ul>
+
+                    <!-- Search Icon and Dropdown -->
+                    <div class="d-flex align-items-center ms-3 position-relative">
+                        <span id="searchToggle" class="search-icon" title="Search users">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <div id="searchContainer" class="search-container">
+                            <div class="search-input-wrapper dropdown-menu show p-2 mt-2" style="min-width: 300px;">
+                                <input id="searchInput" type="text" class="form-control" placeholder="Search users..." autocomplete="off" />
+                                <div id="searchResults" class="search-results mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
                     <partial name="_LoginPartial" />
                 </div>
             </div>
@@ -78,6 +97,7 @@
     <script src="~/js/bets.js" asp-append-version="true"></script>
     <script src="~/js/recommendations.js" asp-append-version="true"></script>
     <script src="~/js/calendar.js" asp-append-version="true"></script>
+    <script src="~/js/search.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

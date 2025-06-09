@@ -1,0 +1,93 @@
+@model List<SportsBettingTracker.ViewModels.LeaderboardViewModel>
+@{
+    ViewData["Title"] = "Leaderboard";
+    var currentDateRange = ViewData["DateRange"] as string ?? "ytd";
+    var startDate = ViewData["StartDate"] as string;
+    var endDate = ViewData["EndDate"] as string;
+    var dateRanges = new List<(string Value, string Label)>
+    {
+        ("ytd", "Year to Date"),
+        ("7days", "Last 7 Days"),
+        ("30days", "Last 30 Days"),
+        ("3months", "Last 3 Months"),
+        ("6months", "Last 6 Months"),
+        ("12months", "Last 12 Months")
+    };
+}
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Leaderboard</h1>
+            <p class="text-muted">Top bettors ranked by ROI from @startDate to @endDate</p>
+        </div>
+        <div class="col-auto align-self-end">
+            <form method="get" asp-controller="Leaderboard" asp-action="Index" class="d-inline">
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        @dateRanges.FirstOrDefault(r => r.Value == currentDateRange).Label
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dateRangeDropdown">
+                        @foreach (var range in dateRanges)
+                        {
+                            <li>
+                                <button class="dropdown-item @(currentDateRange == range.Value ? "active" : "")" type="submit" name="dateRange" value="@range.Value">@range.Label</button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            No users with public bets found for this time period.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Followers</th>
+                        <th>Bets</th>
+                        <th>Win Rate</th>
+                        <th>Net Profit</th>
+                        <th>ROI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int rank = 1;
+                    }
+                    @foreach (var entry in Model)
+                    {
+                        <tr>
+                            <td>@rank</td>
+                            <td>
+                                <a asp-controller="Profile" asp-action="UserProfile" asp-route-id="@entry.User.Id">
+                                    @entry.User.DisplayName
+                                </a>
+                            </td>
+                            <td>@entry.FollowersCount</td>
+                            <td>@entry.TotalBets</td>
+                            <td>@entry.FormattedWinRate</td>
+                            <td class="@(entry.NetProfit >= 0 ? "text-success" : "text-danger")">
+                                @entry.FormattedNetProfit
+                            </td>
+                            <td class="@(entry.ROI >= 0 ? "text-success" : "text-danger")">
+                                @entry.FormattedROI
+                            </td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
