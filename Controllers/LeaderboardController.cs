@@ -42,9 +42,9 @@ namespace SportsBettingTracker.Controllers
 
             foreach (var user in usersWithPublicProfiles)
             {
-                // Get user's public bets within the specified date range
+                // Get user's bets within the specified date range (include all bets, not just public)
                 var userBets = await _context.Bets
-                    .Where(b => b.UserId == user.Id && b.IsPublic && b.BetDate >= startDate && b.BetDate <= endDate)
+                    .Where(b => b.UserId == user.Id && b.BetDate >= startDate && b.BetDate <= endDate)
                     .ToListAsync();
 
                 if (userBets.Count > 0) // Only include users who have bets in the specified time range
