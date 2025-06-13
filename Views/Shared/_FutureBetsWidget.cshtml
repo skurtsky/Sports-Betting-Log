@@ -1,0 +1,49 @@
+@model IEnumerable<SportsBettingTracker.Models.Bet>
+
+@if (Model.Any())
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header py-3">
+            <a href="@Url.Action("Index", "Bets", new { betTypeFilter = "Future", resultFilter = "PENDING" })" class="text-decoration-none">
+                <h6 class="m-0 font-weight-bold text-primary">Pending Future Bets</h6>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover" id="futureBetsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Sport/League</th>
+                            <th>Match</th>
+                            <th>Selection</th>
+                            <th>Stake</th>
+                            <th>Odds</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var bet in Model)
+                        {
+                            <tr>
+                                <td>@bet.BetDate.ToShortDateString()</td>
+                                <td>@(bet.SportLeague?.Name ?? "Unknown")</td>
+                                <td>@bet.Match</td>
+                                <td>@bet.BetSelection</td>
+                                <td>$@bet.Stake.ToString("F2")</td>
+                                <td>@bet.FormattedOdds</td>
+                                <td>
+                                    <span class="badge @(bet.Result == SportsBettingTracker.Models.BetResult.WIN ? "bg-success" : 
+                                                        bet.Result == SportsBettingTracker.Models.BetResult.LOSS ? "bg-danger" :
+                                                        bet.Result == SportsBettingTracker.Models.BetResult.PUSH ? "bg-secondary" : "bg-warning")">
+                                        @bet.Result
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

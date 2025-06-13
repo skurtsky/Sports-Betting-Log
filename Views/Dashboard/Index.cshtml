@@ -1,4 +1,5 @@
 @model SportsBettingTracker.ViewModels.DashboardViewModel
+@using SportsBettingTracker.ViewModels
 @{
     ViewData["Title"] = "Dashboard";
 }
@@ -245,12 +246,17 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="row mb-4">
+    </div>    <div class="row mb-4">
         <!-- Pending Bets Widget -->
         <div class="col-12">
             <partial name="_PendingBetsWidget" model="Model.PendingBets" />
+        </div>
+    </div>
+    
+    <!-- Futures Bets Widget -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <partial name="_FutureBetsWidget" model="Model.FutureBets" />
         </div>
     </div>
 </div>

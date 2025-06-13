@@ -1,3 +1,5 @@
+//#define RECREATE_DATABASE
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -61,10 +63,22 @@ using (var scope = app.Services.CreateScope())
     {        var context = services.GetRequiredService<ApplicationDbContext>();
         var logger = services.GetRequiredService<ILogger<Program>>();
         
+    #if RECREATE_DATABASE
+        // Log that we are deleting and recreating the database
+        logger.LogInformation("Deleting and recreating the database");
+
+        // Delete and recreate the database - DEVELOPMENT ONLY
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        logger.LogInformation("Database recreated from scratch");
+    #else
+        // Log that we are migrating the database   
         logger.LogInformation("Migrating database with Identity tables");
+
         // Apply any pending migrations (don't recreate the database)
         context.Database.Migrate();
         logger.LogInformation("Database migration complete");
+    #endif                
         
         // Seed default admin user if needed
         await SeedDefaultUser(services);

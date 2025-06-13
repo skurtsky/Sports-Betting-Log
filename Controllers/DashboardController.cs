@@ -30,9 +30,7 @@ namespace SportsBettingTracker.Controllers
         public async Task<IActionResult> Index(string dateRange)
         {
             // Default to YTD if no date range is specified
-            dateRange ??= "YTD";
-
-            DateTime startDate = GetStartDateFromRange(dateRange);
+            dateRange ??= "YTD";            DateTime startDate = GetStartDateFromRange(dateRange);
             DateTime endDate = DateTime.Today;            // Get SportLeagues for the pending bets widget dropdowns
             ViewBag.SportLeagues = await _context.SportLeagues.OrderBy(sl => sl.Name).ToListAsync();
 
@@ -41,17 +39,23 @@ namespace SportsBettingTracker.Controllers
             string? userId = currentUser?.Id;
             bool isDemoUser = currentUser?.IsDemoUser ?? false;
 
-            // Base query
+            // Base query for regular bets (respects date range)
             var betsQuery = _context.Bets
                 .Include(b => b.SportLeague)
                 .Where(b => b.BetDate >= startDate && b.BetDate <= endDate);
-                  // Filter by user - always restrict to current user's bets
+                
+            // Special query for future bets (includes all dates)
+            var futureBetsQuery = _context.Bets
+                .Include(b => b.SportLeague)
+                .Where(b => b.BetType == BetType.Future && b.Result == BetResult.PENDING);            // Filter by user - always restrict to current user's bets
             if (userId != null)
             {
                 betsQuery = betsQuery.Where(b => b.UserId == userId);
+                futureBetsQuery = futureBetsQuery.Where(b => b.UserId == userId);
             }
                 
             var bets = await betsQuery.ToListAsync();
+            var futureBets = await futureBetsQuery.OrderBy(b => b.BetDate).ToListAsync();
 
             // Calculate net profit by sport/league
             var profitBySport = bets
@@ -135,11 +139,11 @@ namespace SportsBettingTracker.Controllers
                 DateRange = dateRange,
                 StartDate = startDate,
                 EndDate = endDate,
-                TotalBets = bets.Count,
-                TotalWins = bets.Count(b => b.Result == BetResult.WIN),
+                TotalBets = bets.Count,                TotalWins = bets.Count(b => b.Result == BetResult.WIN),
                 TotalLosses = bets.Count(b => b.Result == BetResult.LOSS),
                 TotalPushes = bets.Count(b => b.Result == BetResult.PUSH),
-                PendingBets = bets.Where(b => b.Result == BetResult.PENDING).ToList(),
+                PendingBets = bets.Where(b => b.Result == BetResult.PENDING && b.BetType != BetType.Future).ToList(),
+                FutureBets = futureBets, // Use the separately queried future bets
                 TotalStake = totalStake,
                 NetProfit = netProfit,
                 ROI = roi,
