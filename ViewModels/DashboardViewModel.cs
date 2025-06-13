@@ -23,6 +23,7 @@ namespace SportsBettingTracker.ViewModels
         public List<ProfitBySport> ProfitBySport { get; set; } = new List<ProfitBySport>();
         public List<ProfitByBetType> ProfitByBetType { get; set; } = new List<ProfitByBetType>();
         public IEnumerable<Bet> PendingBets { get; set; } = new List<Bet>();
+        public IEnumerable<Bet> FutureBets { get; set; } = new List<Bet>();
         
         public List<string> ChartLabels { get; set; } = new List<string>();
         public List<decimal> ChartData { get; set; } = new List<decimal>();

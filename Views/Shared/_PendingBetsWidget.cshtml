@@ -2,12 +2,13 @@
 
 <div class="card shadow-sm mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Pending Bets</h6>
+        <a href="@Url.Action("Index", "Bets", new { resultFilter = "PENDING" })" class="text-decoration-none">
+            <h6 class="m-0 font-weight-bold text-primary">Pending Bets</h6>
+        </a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-sm table-hover" id="pendingBetsTable">
-                <thead>
+            <table class="table table-sm table-hover" id="pendingBetsTable">                <thead>
                     <tr>
                         <th>Date</th>
                         <th>Sport/League</th>
@@ -16,12 +17,11 @@
                         <th>Stake</th>
                         <th>Odds</th>
                         <th>Result</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach (var bet in Model)
-                    {
-                        <tr>
+                <tbody>                    @foreach (var bet in Model)
+                    {                            <tr>
                             <td class="editable" data-id="@bet.Id" data-field="BetDate">
                                 <span class="display-value">@bet.BetDate.ToShortDateString()</span>
                                 <input type="date" class="form-control edit-control d-none" value="@bet.BetDate.ToString("yyyy-MM-dd")" />
@@ -43,8 +43,7 @@
                             </td>
                             <td class="editable" data-id="@bet.Id" data-field="Odds">
                                 <span class="display-value">@bet.FormattedOdds</span>
-                                <input type="number" class="form-control edit-control d-none" value="@bet.Odds" />
-                            </td>
+                                <input type="number" class="form-control edit-control d-none" value="@bet.Odds" />                            </td>
                             <td class="editable" data-id="@bet.Id" data-field="Result">
                                 <span class="display-value">@bet.Result</span>                                <select class="form-control edit-control d-none">
                                     @foreach (var result in Enum.GetValues(typeof(SportsBettingTracker.Models.BetResult)))
@@ -59,6 +58,9 @@
                                         }
                                     }
                                 </select>
+                            </td>
+                            <td>
+                                <a href="@Url.Action("Details", "Bets", new { id = bet.Id })" class="btn btn-sm btn-outline-primary">Details</a>
                             </td>
                         </tr>
                     }
@@ -89,6 +91,6 @@ $(document).ready(function() {
                 }
             }
         });
-    });
+    });    // No longer need row click navigation as we have detail buttons
 });
 </script>
