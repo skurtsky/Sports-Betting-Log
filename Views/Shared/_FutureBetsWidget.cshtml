@@ -10,8 +10,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-sm table-hover" id="futureBetsTable">
-                    <thead>
+                <table class="table table-sm table-hover" id="futureBetsTable">                    <thead>
                         <tr>
                             <th>Date</th>
                             <th>Sport/League</th>
@@ -20,10 +19,10 @@
                             <th>Stake</th>
                             <th>Odds</th>
                             <th>Result</th>
+                            <th>Details</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach (var bet in Model)
+                    <tbody>                        @foreach (var bet in Model)
                         {
                             <tr>
                                 <td>@bet.BetDate.ToShortDateString()</td>
@@ -32,18 +31,20 @@
                                 <td>@bet.BetSelection</td>
                                 <td>$@bet.Stake.ToString("F2")</td>
                                 <td>@bet.FormattedOdds</td>
-                                <td>
-                                    <span class="badge @(bet.Result == SportsBettingTracker.Models.BetResult.WIN ? "bg-success" : 
+                                <td>                                    <span class="badge @(bet.Result == SportsBettingTracker.Models.BetResult.WIN ? "bg-success" : 
                                                         bet.Result == SportsBettingTracker.Models.BetResult.LOSS ? "bg-danger" :
                                                         bet.Result == SportsBettingTracker.Models.BetResult.PUSH ? "bg-secondary" : "bg-warning")">
                                         @bet.Result
                                     </span>
                                 </td>
+                                <td>
+                                    <a href="@Url.Action("Details", "Bets", new { id = bet.Id })" class="btn btn-sm btn-outline-primary">Details</a>
+                                </td>
                             </tr>
                         }
                     </tbody>
                 </table>
-            </div>
-        </div>
-    </div>
+            </div>        </div>
+    </div>    
+    <!-- No script needed as we're using detail buttons instead of clickable rows -->
 }
