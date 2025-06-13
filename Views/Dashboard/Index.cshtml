@@ -82,7 +82,9 @@
                     <h5>Pending Bets</h5>
                 </div>
                 <div class="card-body">
-                    <p class="card-text fs-2">@Model.PendingBets.Count()</p>
+                    <a href="@Url.Action("Index", "Bets", new { resultFilter = "PENDING" })" class="text-decoration-none">
+                        <p class="card-text fs-2">@Model.PendingBets.Count()</p>
+                    </a>
                 </div>
             </div>
         </div>    </div>
