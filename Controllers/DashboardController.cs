@@ -6,13 +6,14 @@ using SportsBettingTracker.Services;
 using SportsBettingTracker.ViewModels;
 using System.Linq;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace SportsBettingTracker.Controllers
-{    [Microsoft.AspNetCore.Authorization.Authorize]
+{    
+    [Microsoft.AspNetCore.Authorization.Authorize]
     public class DashboardController : Controller
-    {        private readonly ApplicationDbContext _context;
+    {        
+        private readonly ApplicationDbContext _context;
         private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> _userManager;
         private readonly SportsBettingTracker.Services.BetRecommendationService _recommendationService;
 
@@ -30,8 +31,12 @@ namespace SportsBettingTracker.Controllers
         public async Task<IActionResult> Index(string dateRange)
         {
             // Default to YTD if no date range is specified
-            dateRange ??= "YTD";            DateTime startDate = GetStartDateFromRange(dateRange);
-            DateTime endDate = DateTime.Today;            // Get SportLeagues for the pending bets widget dropdowns
+            dateRange ??= "YTD";
+            
+            DateTime startDate = GetStartDateFromRange(dateRange);
+            DateTime endDate = DateTime.Today;
+            
+            // Get SportLeagues for the pending bets widget dropdowns
             ViewBag.SportLeagues = await _context.SportLeagues.OrderBy(sl => sl.Name).ToListAsync();
 
             // Get the current user
@@ -47,7 +52,9 @@ namespace SportsBettingTracker.Controllers
             // Special query for future bets (includes all dates)
             var futureBetsQuery = _context.Bets
                 .Include(b => b.SportLeague)
-                .Where(b => b.BetType == BetType.Future && b.Result == BetResult.PENDING);            // Filter by user - always restrict to current user's bets
+                .Where(b => b.BetType == BetType.Future && b.Result == BetResult.PENDING);
+                
+            // Filter by user - always restrict to current user''s bets
             if (userId != null)
             {
                 betsQuery = betsQuery.Where(b => b.UserId == userId);
@@ -67,7 +74,9 @@ namespace SportsBettingTracker.Controllers
                     TotalBets = g.Count(),
                     WinningBets = g.Count(b => b.Result == BetResult.WIN),
                     NetProfit = g.Sum(b => b.AmountWonLost ?? 0),
-                    WinPercentage = g.Count() > 0 ? (decimal)g.Count(b => b.Result == BetResult.WIN) / g.Count() * 100 : 0
+                    WinPercentage = g.Count() > 0 ? (decimal)g.Count(b => b.Result == BetResult.WIN) / g.Count() * 100 : 0,
+                    MedianBet = g.Count() > 0 ? CalculateMedian(g.Select(b => b.Stake)) : 0,
+                    MedianOdds = g.Count() > 0 ? CalculateMedianDecimalOdds(g.Select(b => b.Odds)) : 0
                 })
                 .OrderByDescending(p => p.NetProfit)
                 .ToList();
@@ -82,7 +91,9 @@ namespace SportsBettingTracker.Controllers
                     TotalBets = g.Count(),
                     WinningBets = g.Count(b => b.Result == BetResult.WIN),
                     NetProfit = g.Sum(b => b.AmountWonLost ?? 0),
-                    WinPercentage = g.Count() > 0 ? (decimal)g.Count(b => b.Result == BetResult.WIN) / g.Count() * 100 : 0
+                    WinPercentage = g.Count() > 0 ? (decimal)g.Count(b => b.Result == BetResult.WIN) / g.Count() * 100 : 0,
+                    MedianBet = g.Count() > 0 ? CalculateMedian(g.Select(b => b.Stake)) : 0,
+                    MedianOdds = g.Count() > 0 ? CalculateMedianDecimalOdds(g.Select(b => b.Odds)) : 0
                 })
                 .OrderByDescending(p => p.NetProfit)
                 .ToList();
@@ -116,7 +127,9 @@ namespace SportsBettingTracker.Controllers
             // Calculate cumulative profit data
             var cumulativeProfit = CalculateCumulativeProfit(chartData
                 .Select(d => d.Profit)
-                .ToList());                  // Get recommendations if the user has enough bet history
+                .ToList());
+                
+            // Get recommendations if the user has enough bet history
             List<BetRecommendationViewModel> recommendations = new List<BetRecommendationViewModel>();
             if (userId != null && bets.Count >= 10)
             {
@@ -139,7 +152,8 @@ namespace SportsBettingTracker.Controllers
                 DateRange = dateRange,
                 StartDate = startDate,
                 EndDate = endDate,
-                TotalBets = bets.Count,                TotalWins = bets.Count(b => b.Result == BetResult.WIN),
+                TotalBets = bets.Count,
+                TotalWins = bets.Count(b => b.Result == BetResult.WIN),
                 TotalLosses = bets.Count(b => b.Result == BetResult.LOSS),
                 TotalPushes = bets.Count(b => b.Result == BetResult.PUSH),
                 PendingBets = bets.Where(b => b.Result == BetResult.PENDING && b.BetType != BetType.Future).ToList(),
@@ -163,7 +177,9 @@ namespace SportsBettingTracker.Controllers
             };
 
             return View(viewModel);
-        }        private DateTime GetStartDateFromRange(string dateRange)
+        }
+        
+        private DateTime GetStartDateFromRange(string dateRange)
         {
             return dateRange switch
             {
@@ -175,6 +191,62 @@ namespace SportsBettingTracker.Controllers
                 "AllTime" => DateTime.MinValue,
                 _ => new DateTime(DateTime.Today.Year, 1, 1), // Default to YTD
             };
+        }
+        
+        /// <summary>
+        /// Converts American odds to decimal odds format
+        /// </summary>
+        /// <param name="americanOdds">American odds value</param>
+        /// <returns>Decimal odds equivalent</returns>
+        private decimal ConvertAmericanToDecimalOdds(int americanOdds)
+        {
+            if (americanOdds > 0)
+                return (americanOdds / 100m) + 1m;
+            else if (americanOdds < 0)
+                return (100m / Math.Abs((decimal)americanOdds)) + 1m;
+            else
+                return 1m; // odds of 0 is effectively 1.0 in decimal (even money)
+        }
+        
+        /// <summary>
+        /// Calculates the median value from a collection of decimal values
+        /// </summary>
+        /// <param name="values">Collection of decimal values</param>
+        /// <returns>Median value</returns>
+        private decimal CalculateMedian(IEnumerable<decimal> values)
+        {
+            var sortedValues = values.OrderBy(v => v).ToList();
+            int count = sortedValues.Count;
+            
+            if (count == 0)
+                return 0;
+                
+            if (count % 2 == 0)
+            {
+                // Even count - average the two middle values
+                int middle = count / 2;
+                return (sortedValues[middle - 1] + sortedValues[middle]) / 2m;
+            }
+            else
+            {
+                // Odd count - return the middle value
+                return sortedValues[count / 2];
+            }
+        }
+        
+        /// <summary>
+        /// Calculates median decimal odds from a collection of American odds
+        /// </summary>
+        /// <param name="americanOdds">Collection of American odds values</param>
+        /// <returns>Median odds in decimal format</returns>
+        private decimal CalculateMedianDecimalOdds(IEnumerable<int> americanOdds)
+        {
+            if (!americanOdds.Any())
+                return 0;
+                
+            // Convert each American odds to decimal odds and then find median
+            var decimalOdds = americanOdds.Select(odds => ConvertAmericanToDecimalOdds(odds));
+            return CalculateMedian(decimalOdds);
         }
         
         private (int streakCount, string streakType) CalculateCurrentStreak(List<Bet> completedBets)

@@ -184,13 +184,13 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Sport/League</th>
+                        <table class="table table-striped">                            <thead>
+                                <tr>                                    <th>Sport/League</th>
                                     <th>Total Bets</th>
                                     <th>Win-Loss</th>
                                     <th>Win Rate</th>
+                                    <th>Median Bet</th>
+                                    <th>Median Odds</th>
                                     <th>Net Profit</th>
                                 </tr>
                             </thead>
@@ -200,8 +200,9 @@
                                     <tr>
                                         <td>@sport.SportLeagueName</td>
                                         <td>@sport.TotalBets</td>
-                                        <td>@sport.WinningBets-@(sport.TotalBets - sport.WinningBets)</td>
-                                        <td>@sport.FormattedWinPercentage</td>
+                                        <td>@sport.WinningBets-@(sport.TotalBets - sport.WinningBets)</td>                                        <td>@sport.FormattedWinPercentage</td>
+                                        <td>@sport.FormattedMedianBet</td>
+                                        <td>@sport.FormattedMedianOdds</td>
                                         <td class="@(sport.NetProfit >= 0 ? "text-success" : "text-danger")">@sport.FormattedNetProfit</td>
                                     </tr>
                                 }
@@ -219,13 +220,13 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Bet Type</th>
+                        <table class="table table-striped">                            <thead>
+                                <tr>                                    <th>Bet Type</th>
                                     <th>Total Bets</th>
                                     <th>Win-Loss</th>
                                     <th>Win Rate</th>
+                                    <th>Median Bet</th>
+                                    <th>Median Odds</th>
                                     <th>Net Profit</th>
                                 </tr>
                             </thead>
@@ -235,8 +236,9 @@
                                     <tr>
                                         <td>@betType.BetType</td>
                                         <td>@betType.TotalBets</td>
-                                        <td>@betType.WinningBets-@(betType.TotalBets - betType.WinningBets)</td>
-                                        <td>@betType.FormattedWinPercentage</td>
+                                        <td>@betType.WinningBets-@(betType.TotalBets - betType.WinningBets)</td>                                        <td>@betType.FormattedWinPercentage</td>
+                                        <td>@betType.FormattedMedianBet</td>
+                                        <td>@betType.FormattedMedianOdds</td>
                                         <td class="@(betType.NetProfit >= 0 ? "text-success" : "text-danger")">@betType.FormattedNetProfit</td>
                                     </tr>
                                 }
